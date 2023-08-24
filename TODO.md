@@ -18,7 +18,7 @@ Naturally, these items may change as the progress progresses.
 
 These can happen in any order, generally just as needed.
 
-- [ ] Rewrite the way call args are translated to allow implementing custom types easily
+- [x] Rewrite the way call args are translated to allow implementing custom types easily
 - [ ] Add some wrapper for pointers to emulator memory
 - [ ] Create some form of compile time configuration
 - [ ] Figure out how to unwind the stack

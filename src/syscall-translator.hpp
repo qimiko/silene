@@ -10,8 +10,8 @@
 
 #define STR(X) #X
 #define REGISTER_STUB(ENV, NAME) \
-  ENV.syscall_handler().create_stub_fn( \
-			&SyscallTranslator::translate_wrap<&emu_##NAME> \
+	ENV.syscall_handler().create_stub_fn( \
+		&SyscallTranslator::translate_wrap<&emu_##NAME> \
 	)
 #define REGISTER_FN(ENV, NAME) \
 	ENV.program_loader().add_stub_symbol( \
@@ -109,7 +109,7 @@ namespace SyscallTranslator {
 	 * calls a function from the emulator
 	 * also sets up args and return values
 	*/
-	template <typename R = void, Translatable... Args>
+	template <Translatable R = void, Translatable... Args>
 	R call_func(Environment& env, std::uint32_t vaddr, Args... args) {
 		auto arg_idx = 0u;
 		(translate_call_arg(env, arg_idx, args), ...);

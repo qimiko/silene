@@ -11,6 +11,7 @@
 #include "environment.h"
 #include "syscall-handler.hpp"
 #include "libc-state.h"
+#include "syscall-translator.hpp"
 
 struct JNIEnv {
 	std::uint32_t ptr_self{0}; // should point to itself

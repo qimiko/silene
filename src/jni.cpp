@@ -3,39 +3,17 @@
 void JniState::pre_init(Environment& env) {
 	JavaVM vm;
 
-	vm.ptr_attachCurrentThread = env.syscall_handler().create_stub_fn(
-		&SyscallHandler::translate_wrap<&emu_attachCurrentThread>
-	);
-
-	vm.ptr_getEnv = env.syscall_handler().create_stub_fn(
-		&SyscallHandler::translate_wrap<&emu_getEnv>
-	);
+	vm.ptr_attachCurrentThread = REGISTER_STUB(env, attachCurrentThread);
+	vm.ptr_getEnv = REGISTER_STUB(env, getEnv);
 
 	JNIEnv jni_env;
 
-	jni_env.ptr_getStringUTFChars = env.syscall_handler().create_stub_fn(
-		&SyscallHandler::translate_wrap<&emu_getStringUTFChars>
-	);
-
-	jni_env.ptr_releaseStringUTFChars = env.syscall_handler().create_stub_fn(
-		&SyscallHandler::translate_wrap<&emu_releaseStringUTFChars>
-	);
-
-	jni_env.ptr_findClass = env.syscall_handler().create_stub_fn(
-		&SyscallHandler::translate_wrap<&emu_findClass>
-	);
-
-	jni_env.ptr_deleteLocalRef = env.syscall_handler().create_stub_fn(
-		&SyscallHandler::translate_wrap<&emu_deleteLocalRef>
-	);
-
-	jni_env.ptr_callStaticVoidMethodV = env.syscall_handler().create_stub_fn(
-		&SyscallHandler::translate_wrap<&emu_callStaticVoidMethodV>
-	);
-
-	jni_env.ptr_getStaticMethodID = env.syscall_handler().create_stub_fn(
-		&SyscallHandler::translate_wrap<&emu_getStaticMethodID>
-	);
+	jni_env.ptr_getStringUTFChars = REGISTER_STUB(env, getStringUTFChars);
+	jni_env.ptr_releaseStringUTFChars = REGISTER_STUB(env, releaseStringUTFChars);
+	jni_env.ptr_findClass = REGISTER_STUB(env, findClass);
+	jni_env.ptr_deleteLocalRef = REGISTER_STUB(env, deleteLocalRef);
+	jni_env.ptr_callStaticVoidMethodV = REGISTER_STUB(env, callStaticVoidMethodV);
+	jni_env.ptr_getStaticMethodID = REGISTER_STUB(env, getStaticMethodID);
 
 	// write after registering symbols so memory is ordered more cleanly
 

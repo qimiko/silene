@@ -12,6 +12,7 @@
 
 #include "paged-memory.hpp"
 #include "syscall-handler.hpp"
+#include "syscall-translator.hpp"
 #include "elf-loader.h"
 #include "libc-state.h"
 #include "jni.h"
@@ -142,7 +143,7 @@ public:
 			throw std::runtime_error("symbol not found");
 		}
 
-		return this->_syscall_handler.call_func<R>(*this, symbol_addr, args...);
+		return SyscallTranslator::call_func<R>(*this, symbol_addr, args...);
 	}
 
 	// should be called before anything involving the memory is performed

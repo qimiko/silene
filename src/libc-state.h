@@ -9,6 +9,7 @@
 
 #include "paged-memory.hpp"
 #include "syscall-handler.hpp"
+#include "syscall-translator.hpp"
 #include "environment.h"
 
 class LibcState {

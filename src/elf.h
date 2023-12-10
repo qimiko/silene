@@ -249,7 +249,7 @@ public:
 	 */
 	std::pair<std::size_t /* beginning */, std::size_t /* length */> load_size() const;
 
-	File(const char* path);
+	File(const std::string& path);
 	~File();
 };
 

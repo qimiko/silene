@@ -18,17 +18,44 @@
 #include "elf.h"
 #include "elf-loader.h"
 
-int main(int argc, char** argv) {
-#if 1
-	spdlog::set_level(spdlog::level::debug);
-#endif
+struct Args {
+	bool verbose{false};
+	std::string filename{};
+	std::string pathname{};
+};
 
-	if (argc != 2) {
-		std::cout << "usage: " << argv[0] << " <so file>" << std::endl;
+Args parse_cli(std::span<char*> args) {
+	Args arg_obj{};
+
+	for (const auto& arg : args) {
+		if (std::strcmp(arg, "--verbose") == 0 || std::strcmp(arg, "-v") == 0) {
+			arg_obj.verbose = true;
+		} else if (arg_obj.pathname.empty()) {
+			arg_obj.pathname = arg;
+		} else if (arg_obj.filename.empty()) {
+			arg_obj.filename = arg;
+		}
+	}
+
+	return arg_obj;
+}
+
+int main(int argc, char** argv) {
+	auto args = parse_cli({
+		argv,
+		static_cast<std::size_t>(argc)
+	});
+
+	if (args.verbose) {
+		spdlog::set_level(spdlog::level::debug);
+	}
+
+	if (args.filename.empty()) {
+		std::cout << "usage: " << args.pathname << " <so file> [-v|--verbose]" << std::endl;
 		return 1;
 	}
 
-	auto elf = Elf::File(argv[1]);
+	auto elf = Elf::File(args.filename);
 
 	auto header = elf.header();
 
@@ -93,8 +120,13 @@ int main(int argc, char** argv) {
 	// first arg should be a jstring to the path
 	auto path_string = env.jni().create_string_ref("/data/data/com.robtopx.geometryjump/");
 
-	// TODO: support both nativeSetPaths and nativeSetApkPath
-	env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxActivity_nativeSetPaths", jni_env_ptr, 0, path_string);
+	if (env.has_symbol("Java_org_cocos2dx_lib_Cocos2dxActivity_nativeSetPaths")) {
+		// this symbol was used on older versions of cocos (but are otherwise identical)
+		env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxActivity_nativeSetPaths", jni_env_ptr, 0, path_string);
+	} else {
+		env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxHelper_nativeSetApkPath", jni_env_ptr, 0, path_string);
+	}
+
 	env.jni().remove_ref(path_string);
 
 	// last two args are width/height

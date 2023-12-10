@@ -75,8 +75,8 @@ std::pair<std::size_t, std::size_t> File::load_size() const {
 	return {beginning, end - beginning};
 }
 
-File::File(const char* path) {
-	auto elf_fd = open(path, O_RDONLY);
+File::File(const std::string& path) {
+	auto elf_fd = open(path.c_str(), O_RDONLY);
 
 	struct stat s;
 

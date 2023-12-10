@@ -349,4 +349,9 @@ const std::uint32_t Elf::Loader::get_symbol_addr(const std::string_view& symbol)
 	}
 
 	return 0;
-};
+}
+
+bool Elf::Loader::has_symbol(const std::string_view& symbol) const {
+	auto symbol_str = std::string(symbol);
+	return this->_loaded_symbols.contains(symbol_str);
+}

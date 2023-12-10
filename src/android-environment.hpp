@@ -146,6 +146,10 @@ public:
 		return SyscallTranslator::call_func<R>(*this, symbol_addr, args...);
 	}
 
+	bool has_symbol(const std::string_view& symbol) const {
+		return this->_program_loader.has_symbol(symbol);
+	}
+
 	// should be called before anything involving the memory is performed
 	void pre_init();
 

@@ -72,6 +72,7 @@ public:
 	};
 
 	const std::uint32_t get_symbol_addr(const std::string_view& symbol) const;
+	bool has_symbol(const std::string_view& symbol) const;
 
 	void set_symbol_fallback_addr(std::uint32_t vaddr);
 

@@ -135,6 +135,8 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 			if (this->_debug_server) {
 				continue;
 			}
+
+			this->dump_state();
 			return;
 		}
 
@@ -149,6 +151,16 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 		spdlog::error("received unexpected halt: {:#x}", static_cast<int>(halt_reason));
 		throw std::runtime_error("unexpected cpu halt");
 	}
+}
+
+void AndroidEnvironment::dump_state() {
+	auto& regs = _cpu->Regs();
+	spdlog::info("register states:\nr0:  {:#010x} r1:  {:#010x} r2:  {:#010x} r3:  {:#010x}\nr4:  {:#010x} r5:  {:#010x} r6:  {:#010x} r7:  {:#010x}\nr8:  {:#010x} r9:  {:#010x} r10: {:#010x} r11: {:#010x}\nr12: {:#010x} sp:  {:#010x} lr:  {:#010x} pc:  {:#010x}",
+		regs[0], regs[1], regs[2], regs[3],
+		regs[4], regs[5], regs[6], regs[7],
+		regs[8], regs[9], regs[10], regs[11],
+		regs[12], regs[13], regs[14], regs[15]
+	);
 }
 
 void AndroidEnvironment::begin_debugging() {

@@ -165,6 +165,8 @@ public:
 		this->_cpu = cpu;
 	}
 
+	void dump_state() override;
+
 	std::shared_ptr<Dynarmic::A32::Jit> current_cpu() override {
 		return this->_cpu;
 	}

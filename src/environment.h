@@ -33,6 +33,11 @@ public:
 	virtual Elf::Loader& program_loader() = 0;
 
 	/**
+	 * outputs the current state of the environment
+	 */
+	virtual void dump_state() = 0;
+
+	/**
 	 * run a function at some address, assuming that all arguments are already setup
 	 */
 	virtual void run_func(std::uint32_t vaddr) = 0;

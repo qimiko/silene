@@ -22,13 +22,19 @@ void AndroidEnvironment::ExceptionRaised(std::uint32_t pc, Dynarmic::A32::Except
 			spdlog::error("unpredictable instruction exception: pc = {:#08x}", pc);
 			spdlog::info("value at {:#08x}: {:#08x}", pc, MemoryRead32(pc));
 			this->_cpu->HaltExecution(HALT_REASON_ERROR);
-			throw std::runtime_error("unpredictable instruction");
+
+			if (this->_debug_server) {
+				this->_debug_server->report_halt(GdbServer::HaltReason::EmulationTrap);
+			}
 			break;
 		case Dynarmic::A32::Exception::UndefinedInstruction:
 			spdlog::error("undefined instruction exception: pc = {:#08x}", pc);
 			spdlog::info("value at {:#08x}: {:#08x}", pc, MemoryRead32(pc));
+
 			this->_cpu->HaltExecution(HALT_REASON_ERROR);
-			throw std::runtime_error("undefined instruction");
+			if (this->_debug_server) {
+				this->_debug_server->report_halt(GdbServer::HaltReason::IllegalInstruction);
+			}
 			break;
 		default:
 			spdlog::error("unknown exception {} raised: pc = {:#08x}", static_cast<std::uint32_t>(exception), pc);
@@ -96,18 +102,21 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 	while (1) {
 		ticks_left = 10;
 
-		auto halt_reason = this->_cpu->Step();
+		// give an invalid value by default
+		auto halt_reason = static_cast<Dynarmic::HaltReason>(0);
+		if (this->_debug_server) {
+			auto regs = _cpu->Regs();
+			auto cpsr = _cpu->Cpsr();
 
-		auto regs = _cpu->Regs();
-		spdlog::debug("step at addr {:#08x} ({:#08x}):\n{:#08x} {:#08x} {:#08x} {:#08x} {:#08x}\n{:#08x} {:#08x} {:#08x} {:#08x} {:#08x}\n{:#08x} {:#08x} {:#08x} {:#08x} {:#08x}",
-			regs[15], this->_memory->read_word(regs[15]), regs[0], regs[1], regs[2], regs[3], regs[4],
-			regs[5], regs[6], regs[7], regs[8], regs[9],
-			regs[10], regs[11], regs[12], regs[13], regs[14]);
-		spdlog::debug("cpu halted, reason {:#x}", static_cast<std::uint32_t>(halt_reason));
+			this->_debug_server->handle_events();
+			halt_reason = this->_cpu->Step();
+		} else {
+			halt_reason = this->_cpu->Run();
+		}
 
-		if (last_return != regs[14]) {
-			last_return = regs[14];
-			spdlog::debug("jump detected! lr = {:#08x}, pc = {:#08x}", last_return, regs[15]);
+		if (Dynarmic::Has(halt_reason, HALT_REASON_HANDLE_SYSCALL)) {
+			this->_syscall_handler.on_symbol_call(*this);
+			halt_reason &= ~HALT_REASON_HANDLE_SYSCALL;
 		}
 
 		// 0 means it ran out of steps
@@ -116,14 +125,16 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 			continue;
 		}
 
-		if (Dynarmic::Has(halt_reason, HALT_REASON_HANDLE_SYSCALL)) {
-			this->_syscall_handler.on_symbol_call(*this);
-		}
-
 		if (Dynarmic::Has(halt_reason, HALT_REASON_ERROR)) {
 			auto regs = _cpu->Regs();
 			auto pc = regs[15];
 			spdlog::warn("error at addr {:#08x}: {:#08x}", pc, _memory->read_word(pc));
+
+			// at this point, the user may still want to continue debugging
+			// so let the cpu continue
+			if (this->_debug_server) {
+				continue;
+			}
 			return;
 		}
 
@@ -135,6 +146,14 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 			continue;
 		}
 
+		spdlog::error("received unexpected halt: {:#x}", static_cast<int>(halt_reason));
 		throw std::runtime_error("unexpected cpu halt");
 	}
+}
+
+void AndroidEnvironment::begin_debugging() {
+	auto port = 5039;
+
+	this->_debug_server = std::make_unique<GdbServer>(this->_memory, this->_cpu);
+	this->_debug_server->begin_connection("0.0.0.0", port);
 }

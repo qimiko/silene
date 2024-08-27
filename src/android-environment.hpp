@@ -16,6 +16,7 @@
 #include "elf-loader.h"
 #include "libc-state.h"
 #include "jni.h"
+#include "gdb-server.h"
 
 #include "environment.h"
 
@@ -43,6 +44,8 @@ public:
 	std::shared_ptr<Dynarmic::A32::Jit> _cpu{nullptr};
 
 	std::uint64_t ticks_left = 0;
+
+	std::unique_ptr<GdbServer> _debug_server{nullptr};
 
 	std::uint8_t MemoryRead8(std::uint32_t vaddr) override {
 		return _memory->read_byte(vaddr);
@@ -149,6 +152,8 @@ public:
 	bool has_symbol(const std::string_view& symbol) const {
 		return this->_program_loader.has_symbol(symbol);
 	}
+
+	void begin_debugging();
 
 	// should be called before anything involving the memory is performed
 	void pre_init();

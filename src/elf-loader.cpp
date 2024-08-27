@@ -294,6 +294,7 @@ std::uint32_t Elf::Loader::map_elf(const Elf::File& elf) {
 	auto load_bias = this->_memory->get_next_page_aligned_addr();
 	auto reloc_offset = 0u;
 
+	// in ghidra, this ends up being 0x10000 - bias = 0xf000
 	spdlog::info("loading object with bias {:#08x}", load_bias);
 
 	std::span<Elf::DynamicSectionEntry> dynamic_segment{};

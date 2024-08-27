@@ -35,12 +35,12 @@ Unfortunately, [Boost](https://www.boost.org/) must be installed on your system 
 
 ### Running
 
-This is currently a command line program. Only one argument is taken, that being the path to the .so file you want to run.
+This is currently a command line program. Only one argument is required, that being the path to the .so file you want to run.
 
 `./silene test/minimal-library/build/libtest-library.so`
 
-> [!NOTE]  
-> This will probably spam your console/explode. Redirecting the log output is very recommended.
+You can enable verbose logging with the `--verbose` flag.  
+If you like to use GDB, you can also enable debugging with the `--debug` flag.
 
 ## License
 

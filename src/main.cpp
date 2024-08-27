@@ -20,6 +20,7 @@
 
 struct Args {
 	bool verbose{false};
+	bool enable_debugger{false};
 	std::string filename{};
 	std::string pathname{};
 };
@@ -30,6 +31,8 @@ Args parse_cli(std::span<char*> args) {
 	for (const auto& arg : args) {
 		if (std::strcmp(arg, "--verbose") == 0 || std::strcmp(arg, "-v") == 0) {
 			arg_obj.verbose = true;
+		} else if (std::strcmp(arg, "--debug") == 0) {
+			arg_obj.enable_debugger = true;
 		} else if (arg_obj.pathname.empty()) {
 			arg_obj.pathname = arg;
 		} else if (arg_obj.filename.empty()) {
@@ -46,13 +49,13 @@ int main(int argc, char** argv) {
 		static_cast<std::size_t>(argc)
 	});
 
-	if (args.verbose) {
-		spdlog::set_level(spdlog::level::debug);
+	if (args.filename.empty()) {
+		std::cout << "usage: " << args.pathname << " <so file> [-v|--verbose] [--debug]" << std::endl;
+		return 1;
 	}
 
-	if (args.filename.empty()) {
-		std::cout << "usage: " << args.pathname << " <so file> [-v|--verbose]" << std::endl;
-		return 1;
+	if (args.verbose) {
+		spdlog::set_level(spdlog::level::debug);
 	}
 
 	auto elf = Elf::File(args.filename);
@@ -67,6 +70,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
+/*
 	for (const auto& segment : elf.program_headers()) {
 		std::cout << "segment: type = " << static_cast<std::uint32_t>(segment.type) << " ";
 		std::cout << "offset = 0x" << std::hex << segment.segment_offset << std::dec << " ";
@@ -78,6 +82,7 @@ int main(int argc, char** argv) {
 		std::cout << "align = 0x" << std::hex << segment.alignment << std::dec;
 		std::cout << std::endl;
 	}
+*/
 
 	AndroidEnvironment env{};
 	Dynarmic::A32::UserConfig user_config{};
@@ -93,6 +98,10 @@ int main(int argc, char** argv) {
 	auto cpu = std::make_shared<Dynarmic::A32::Jit>(user_config);
 	env.set_cpu(cpu);
 
+	if (args.enable_debugger) {
+		env.begin_debugging();
+	}
+
 	env.pre_init();
 
 	env.program_loader().map_elf(elf);
@@ -106,15 +115,13 @@ int main(int argc, char** argv) {
 	// Java_org_cocos2dx_lib_Cocos2dxHelper_nativeSetApkPath
 	// Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInit
 
-	spdlog::info("calling JNI_OnLoad");
+	spdlog::info("beginning JNI init");
 
 	auto jni_env_ptr = env.jni().get_env_ptr();
 
-	try {
+	if (env.has_symbol("JNI_OnLoad")) {
 		auto jvm_ptr = env.jni().get_vm_ptr();
 		env.call_symbol<void>("JNI_OnLoad", jvm_ptr);
-	} catch (const std::out_of_range& e) {
-		// ignore, no jni_onload defined
 	}
 
 	// first arg should be a jstring to the path
@@ -131,7 +138,6 @@ int main(int argc, char** argv) {
 
 	// last two args are width/height
 	env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInit", jni_env_ptr, 0, 1920, 1080);
-
 
 	spdlog::info("r0: {:#08x}, pc: {:#08x}", cpu->Regs()[0], cpu->Regs()[15]);
 

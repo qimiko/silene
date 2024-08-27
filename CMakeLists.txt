@@ -6,6 +6,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 project(silene VERSION 0.0.1)
 
 set(SRC_FILES
+	src/tcp-server.cpp
+	src/gdb-server.cpp
 	src/elf.cpp
 	src/paged-memory.cpp
 	src/elf-loader.cpp

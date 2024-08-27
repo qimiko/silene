@@ -24,6 +24,8 @@ include(cmake/CPM.cmake)
 
 CPMAddPackage("gh:merryhime/dynarmic#6.5.0")
 CPMAddPackage("gh:gabime/spdlog@1.12.0")
+CPMAddPackage("gh:CLIUtils/CLI11@2.4.2")
 
 target_link_libraries(silene dynarmic)
 target_link_libraries(silene spdlog)
+target_link_libraries(silene CLI11::CLI11)

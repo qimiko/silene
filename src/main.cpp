@@ -11,6 +11,7 @@
 #include <dynarmic/interface/A32/config.h>
 #include <dynarmic/interface/exclusive_monitor.h>
 
+#include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
 
 #include "android-environment.hpp"
@@ -18,47 +19,28 @@
 #include "elf.h"
 #include "elf-loader.h"
 
-struct Args {
-	bool verbose{false};
-	bool enable_debugger{false};
-	std::string filename{};
-	std::string pathname{};
-};
-
-Args parse_cli(std::span<char*> args) {
-	Args arg_obj{};
-
-	for (const auto& arg : args) {
-		if (std::strcmp(arg, "--verbose") == 0 || std::strcmp(arg, "-v") == 0) {
-			arg_obj.verbose = true;
-		} else if (std::strcmp(arg, "--debug") == 0) {
-			arg_obj.enable_debugger = true;
-		} else if (arg_obj.pathname.empty()) {
-			arg_obj.pathname = arg;
-		} else if (arg_obj.filename.empty()) {
-			arg_obj.filename = arg;
-		}
-	}
-
-	return arg_obj;
-}
-
 int main(int argc, char** argv) {
-	auto args = parse_cli({
-		argv,
-		static_cast<std::size_t>(argc)
-	});
+	CLI::App app{"App description"};
+	argv = app.ensure_utf8(argv);
 
-	if (args.filename.empty()) {
-		std::cout << "usage: " << args.pathname << " <so file> [-v|--verbose] [--debug]" << std::endl;
-		return 1;
-	}
+	std::string filename;
+	app.add_option("binary", filename, "path to so file to load")
+		->check(CLI::ExistingFile)
+		->required();
 
-	if (args.verbose) {
+	bool verbose = false;
+	app.add_flag("-v,--verbose", verbose, "enable extra debug logging");
+
+	bool enable_debugging = false;
+	app.add_flag("-d,--debug", enable_debugging, "enables debugging through gdb on port 5039");
+
+	CLI11_PARSE(app, argc, argv);
+
+	if (verbose) {
 		spdlog::set_level(spdlog::level::debug);
 	}
 
-	auto elf = Elf::File(args.filename);
+	auto elf = Elf::File(filename);
 
 	auto header = elf.header();
 
@@ -98,7 +80,7 @@ int main(int argc, char** argv) {
 	auto cpu = std::make_shared<Dynarmic::A32::Jit>(user_config);
 	env.set_cpu(cpu);
 
-	if (args.enable_debugger) {
+	if (enable_debugging) {
 		env.begin_debugging();
 	}
 

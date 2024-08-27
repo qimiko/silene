@@ -37,6 +37,8 @@ public:
 	 */
 	virtual void dump_state() = 0;
 
+	virtual std::string assets_dir() = 0;
+
 	/**
 	 * run a function at some address, assuming that all arguments are already setup
 	 */

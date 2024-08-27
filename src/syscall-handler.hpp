@@ -30,6 +30,12 @@ public:
 	*/
 	std::uint32_t create_stub_fn(HandlerFunction fn);
 
+	/**
+	 * writes a stub to an existing place in memory.
+	 * at least 4/8 bytes (thumb/arm) is required to override the function
+	 */
+	std::uint32_t replace_fn(std::uint32_t addr, HandlerFunction fn);
+
 	SyscallHandler(std::shared_ptr<PagedMemory> memory) : _memory(memory) {}
 };
 

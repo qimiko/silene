@@ -105,9 +105,6 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 		// give an invalid value by default
 		auto halt_reason = static_cast<Dynarmic::HaltReason>(0);
 		if (this->_debug_server) {
-			auto regs = _cpu->Regs();
-			auto cpsr = _cpu->Cpsr();
-
 			this->_debug_server->handle_events();
 			halt_reason = this->_cpu->Step();
 		} else {

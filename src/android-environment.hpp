@@ -40,6 +40,7 @@ public:
 	SyscallHandler _syscall_handler{_memory};
 	LibcState _libc{_memory};
 	JniState _jni{_memory};
+	std::string _assets_dir{};
 
 	std::shared_ptr<Dynarmic::A32::Jit> _cpu{nullptr};
 
@@ -166,6 +167,14 @@ public:
 	}
 
 	void dump_state() override;
+
+	std::string assets_dir() override {
+		return this->_assets_dir;
+	}
+
+	void set_assets_dir(std::string x) {
+		this->_assets_dir = x;
+	}
 
 	std::shared_ptr<Dynarmic::A32::Jit> current_cpu() override {
 		return this->_cpu;

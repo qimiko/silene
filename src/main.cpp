@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -19,8 +20,10 @@
 #include "elf.h"
 #include "elf-loader.h"
 
+#include "hook/fileutils.h"
+
 int main(int argc, char** argv) {
-	CLI::App app{"App description"};
+	CLI::App app;
 	argv = app.ensure_utf8(argv);
 
 	std::string filename;
@@ -34,7 +37,17 @@ int main(int argc, char** argv) {
 	bool enable_debugging = false;
 	app.add_flag("-d,--debug", enable_debugging, "enables debugging through gdb on port 5039");
 
+	std::string resources_dir = "./assets/";
+	app.add_option("--assets", resources_dir, "determines where cocos resources should be redirected to")
+		->capture_default_str()
+		->check(CLI::ExistingDirectory);
+
 	CLI11_PARSE(app, argc, argv);
+
+	if (!std::filesystem::is_directory(resources_dir)) {
+		std::cout << "resources directory does not exist: " << resources_dir << std::endl;
+		return 0;
+	}
 
 	if (verbose) {
 		spdlog::set_level(spdlog::level::debug);
@@ -80,6 +93,8 @@ int main(int argc, char** argv) {
 	auto cpu = std::make_shared<Dynarmic::A32::Jit>(user_config);
 	env.set_cpu(cpu);
 
+	env.set_assets_dir(resources_dir);
+
 	if (enable_debugging) {
 		env.begin_debugging();
 	}
@@ -105,6 +120,13 @@ int main(int argc, char** argv) {
 		auto jvm_ptr = env.jni().get_vm_ptr();
 		env.call_symbol<void>("JNI_OnLoad", jvm_ptr);
 	}
+
+	if (auto filedata = env.program_loader().get_symbol_addr("_ZN7cocos2d18CCFileUtilsAndroid11getFileDataEPKcS2_Pm"); filedata != 0) {
+		env.syscall_handler().replace_fn(filedata, &SyscallTranslator::translate_wrap<&hook_CCFileUtils_getFileData>);
+	} else if (auto legacy_filedata = env.program_loader().get_symbol_addr("_ZN7cocos2d11CCFileUtils11getFileDataEPKcS2_Pm"); legacy_filedata != 0) {
+		env.syscall_handler().replace_fn(legacy_filedata, &SyscallTranslator::translate_wrap<&hook_CCFileUtils_getFileData>);
+	}
+
 
 	// first arg should be a jstring to the path
 	auto path_string = env.jni().create_string_ref("/application_resources.apk");

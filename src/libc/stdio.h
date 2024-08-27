@@ -6,7 +6,8 @@
 #include "../environment.h"
 
 std::uint32_t emu_fopen(Environment& env, std::uint32_t filename_ptr, std::uint32_t mode_ptr) {
-	spdlog::info("TODO: fopen");
+	auto filename = env.memory_manager()->read_bytes<char>(filename_ptr);
+	spdlog::info("TODO: fopen({})", filename);
 
 	return 0;
 }

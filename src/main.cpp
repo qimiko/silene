@@ -125,7 +125,7 @@ int main(int argc, char** argv) {
 	}
 
 	// first arg should be a jstring to the path
-	auto path_string = env.jni().create_string_ref("/data/data/com.robtopx.geometryjump/");
+	auto path_string = env.jni().create_string_ref("/application_resources.apk");
 
 	if (env.has_symbol("Java_org_cocos2dx_lib_Cocos2dxActivity_nativeSetPaths")) {
 		// this symbol was used on older versions of cocos (but are otherwise identical)

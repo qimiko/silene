@@ -1,5 +1,10 @@
 #include "jni.h"
 
+#include "jni/base-robtop-activity.h"
+
+#define REGISTER_STATIC(CLASS, SIGNATURE, NAME) \
+	register_static(CLASS, SIGNATURE, &SyscallTranslator::translate_wrap<&jni_##NAME>)
+
 void JniState::pre_init(Environment& env) {
 	JavaVM vm;
 
@@ -13,6 +18,7 @@ void JniState::pre_init(Environment& env) {
 	jni_env.ptr_findClass = REGISTER_STUB(env, findClass);
 	jni_env.ptr_deleteLocalRef = REGISTER_STUB(env, deleteLocalRef);
 	jni_env.ptr_callStaticVoidMethodV = REGISTER_STUB(env, callStaticVoidMethodV);
+	jni_env.ptr_callStaticObjectMethodV = REGISTER_STUB(env, callStaticObjectMethodV);
 	jni_env.ptr_getStaticMethodID = REGISTER_STUB(env, getStaticMethodID);
 
 	// write after registering symbols so memory is ordered more cleanly
@@ -42,6 +48,8 @@ void JniState::pre_init(Environment& env) {
 
 	this->_memory->copy(env_write_addr, &jni_env, sizeof(JNIEnv));
 	this->_env_ptr = env_write_addr;
+
+	REGISTER_STATIC("com/customRobTop/BaseRobTopActivity", "getUserID;()Ljava/lang/String;", get_user_id);
 }
 
 std::uint32_t JniState::get_vm_ptr() const {
@@ -85,8 +93,13 @@ std::uint32_t JniState::emu_attachCurrentThread(Environment& env, std::uint32_t 
 
 std::uint32_t JniState::emu_findClass(Environment& env, std::uint32_t java_env, std::uint32_t name_ptr) {
 	auto class_name = env.memory_manager()->read_bytes<char>(name_ptr);
-	spdlog::info("TODO: FindClass - {}", class_name);
 
+	auto& jni = env.jni();
+	if (auto jclass = jni._class_name_mapping.find(class_name); jclass != jni._class_name_mapping.end()) {
+		return jclass->second;
+	}
+
+	spdlog::warn("FindClass on nonexistent class - {}", class_name);
 	return 0;
 }
 
@@ -95,15 +108,34 @@ void JniState::emu_deleteLocalRef(Environment& env, std::uint32_t java_env, std:
 }
 
 void JniState::emu_callStaticVoidMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id) {
-	spdlog::info("TODO: CallStaticVoidMethodV");
+	env.jni().get_fn(local_ref, method_id)(env);
+}
+
+void JniState::emu_callStaticObjectMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id) {
+	// hopefully, the method we call correctly sets the return type
+	env.jni().get_fn(local_ref, method_id)(env);
+}
+
+JniState::StaticJavaClass::JniFunction JniState::get_fn(std::uint32_t class_id, std::uint32_t method_id) const {
+	auto clazz = _class_mapping.at(class_id);
+	return clazz.method_impls.at(method_id);
 }
 
 std::uint32_t JniState::emu_getStaticMethodID(Environment& env, std::uint32_t java_env, std::uint32_t class_ptr, std::uint32_t name_ptr, std::uint32_t signature_ptr) {
 	auto method_name = env.memory_manager()->read_bytes<char>(name_ptr);
 	auto method_signature = env.memory_manager()->read_bytes<char>(signature_ptr);
 
-	spdlog::info("TODO: GetStaticMethodID - {};{}", method_name, method_signature);
+	auto& jni = env.jni();
+	if (auto jclass = jni._class_mapping.find(class_ptr); jclass != jni._class_mapping.end()) {
+		auto& clazz = jclass->second;
+		auto combined = fmt::format("{};{}", method_name, method_signature);
 
+		if (auto jmethod = clazz.method_names.find(combined); jmethod != clazz.method_names.end()) {
+			return jmethod->second;
+		}
+	}
+
+	spdlog::warn("GetStaticMethodID on nonexistent method - {};{}", method_name, method_signature);
 	return 0;
 }
 
@@ -133,3 +165,39 @@ void JniState::emu_releaseStringUTFChars(Environment& env, std::uint32_t java_en
 	env.libc().free_memory(string_ptr);
 	// TODO: should we actually free the jstring here?
 }
+
+std::uint32_t JniState::register_static(std::string class_name, std::string signature, StaticJavaClass::JniFunction fn) {
+	if (auto jclass = _class_name_mapping.find(class_name); jclass != _class_name_mapping.end()) {
+		auto& clazz = _class_mapping[jclass->second];
+		if (auto jmethod = clazz.method_names.find(signature); jmethod != clazz.method_names.end()) {
+			// oops! we already have a method of that id
+			return jmethod->second;
+		}
+
+		auto method_id = clazz.method_count;
+		clazz.method_count++;
+
+		clazz.method_names[signature] = method_id;
+		clazz.method_impls[method_id] = fn;
+
+		return method_id;
+	}
+
+	// class doesn't exist, time to create it
+	auto class_id = _class_count;
+	_class_count++;
+
+	_class_name_mapping[class_name] = class_id;
+	_class_mapping[class_id] = {class_id, class_name};
+
+	auto& clazz = _class_mapping[class_id];
+
+	auto method_id = clazz.method_count;
+	clazz.method_count++;
+
+	clazz.method_names[signature] = method_id;
+	clazz.method_impls[method_id] = fn;
+
+	return method_id;
+}
+

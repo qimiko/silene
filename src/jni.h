@@ -265,6 +265,21 @@ struct JavaVM {
 };
 
 class JniState {
+	/**
+	 * GD doesn't use non-static classes for anything,
+	 * so there's not much reason to implement proper classes
+	 */
+	struct StaticJavaClass {
+		using JniFunction = void(*)(Environment& env);
+
+		std::uint32_t id;
+		std::string name;
+
+		std::unordered_map<std::string /* method_signature */, std::uint32_t /* method_id */> method_names{};
+		std::unordered_map<std::uint32_t /* method_id */, JniFunction> method_impls{};
+		std::uint32_t method_count{1};
+	};
+
 	std::shared_ptr<PagedMemory> _memory{nullptr};
 
 	std::uint32_t _vm_ptr{0};
@@ -272,14 +287,25 @@ class JniState {
 
 	std::unordered_map<std::uint32_t /* vaddr */, std::string /* stored */> _object_refs{};
 
+	// use a non-zero value to avoid tricking it
+	std::uint32_t _class_count{1};
+	std::unordered_map<std::string /* class_name */, std::uint32_t /* class_id */> _class_name_mapping{};
+	std::unordered_map<std::uint32_t /* class_id */, StaticJavaClass /* class */> _class_mapping{};
+
 	static std::uint32_t emu_getStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t string, std::uint32_t is_copy_ptr);
 	static void emu_releaseStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t jstring, std::uint32_t string_ptr);
+	static void emu_deleteLocalRef(Environment& env, std::uint32_t java_env, std::uint32_t local_ref);
+
 	static std::uint32_t emu_getEnv(Environment& env, std::uint32_t java_env, std::uint32_t out_ptr, std::uint32_t version);
 	static std::uint32_t emu_attachCurrentThread(Environment& env, std::uint32_t java_env, std::uint32_t p_env_ptr, std::uint32_t attach_args_ptr);
+
 	static std::uint32_t emu_findClass(Environment& env, std::uint32_t java_env, std::uint32_t name_ptr);
-	static void emu_deleteLocalRef(Environment& env, std::uint32_t java_env, std::uint32_t local_ref);
-	static void emu_callStaticVoidMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id);
 	static std::uint32_t emu_getStaticMethodID(Environment& env, std::uint32_t java_env, std::uint32_t class_ptr, std::uint32_t name_ptr, std::uint32_t signature_ptr);
+
+	static void emu_callStaticObjectMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id);
+	static void emu_callStaticVoidMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id);
+
+	StaticJavaClass::JniFunction get_fn(std::uint32_t class_id, std::uint32_t method_id) const;
 
 public:
 	void pre_init(Environment& env);
@@ -301,6 +327,11 @@ public:
 	 * stores a reference to a string variable, like a jstring
 	 */
 	std::uint32_t create_string_ref(const std::string_view& str);
+
+	/**
+	 * registers a static jni method
+	 */
+	std::uint32_t register_static(std::string class_name, std::string signature, StaticJavaClass::JniFunction fn);
 
 	JniState(std::shared_ptr<PagedMemory> memory) : _memory(memory) {}
 };

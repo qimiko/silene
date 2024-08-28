@@ -8,6 +8,7 @@
 #include <sstream>
 #include <iomanip>
 #include <bit>
+#include <span>
 
 #include <exception>
 
@@ -70,7 +71,7 @@ const char* reg_description() {
 </feature>)";
 }
 
-std::string to_hex_string(const std::string_view& s) {
+std::string to_hex_string(const std::span<std::uint8_t>& s) {
 	std::stringstream ss;
 
 	for (const auto& c : s) {
@@ -345,7 +346,7 @@ bool GdbServer::dispatch_command(const std::string_view& command) {
 				length = memory_max - offset;
 			}
 
-			auto bytes_begin = this->_memory->read_bytes<char>(offset);
+			auto bytes_begin = this->_memory->read_bytes<std::uint8_t>(offset);
 			auto str = to_hex_string({bytes_begin, length});
 
 			this->send_message(str);

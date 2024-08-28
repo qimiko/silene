@@ -1,7 +1,7 @@
 #include "android-environment.hpp"
 
 void AndroidEnvironment::CallSVC(std::uint32_t swi) {
-	spdlog::debug("svc call: {}", swi);
+	spdlog::trace("svc call: {}", swi);
 
 	switch (swi) {
 		case 1:
@@ -16,9 +16,11 @@ void AndroidEnvironment::CallSVC(std::uint32_t swi) {
 }
 
 void AndroidEnvironment::ExceptionRaised(std::uint32_t pc, Dynarmic::A32::Exception exception) {
+	using namespace Dynarmic::A32;
+
 	// todo: we should be able to backtrace?
 	switch (exception) {
-		case Dynarmic::A32::Exception::UnpredictableInstruction:
+		case Exception::UnpredictableInstruction:
 			spdlog::error("unpredictable instruction exception: pc = {:#08x}", pc);
 			spdlog::info("value at {:#08x}: {:#08x}", pc, MemoryRead32(pc));
 			this->_cpu->HaltExecution(HALT_REASON_ERROR);
@@ -27,13 +29,21 @@ void AndroidEnvironment::ExceptionRaised(std::uint32_t pc, Dynarmic::A32::Except
 				this->_debug_server->report_halt(GdbServer::HaltReason::EmulationTrap);
 			}
 			break;
-		case Dynarmic::A32::Exception::UndefinedInstruction:
+		case Exception::UndefinedInstruction:
 			spdlog::error("undefined instruction exception: pc = {:#08x}", pc);
 			spdlog::info("value at {:#08x}: {:#08x}", pc, MemoryRead32(pc));
 
 			this->_cpu->HaltExecution(HALT_REASON_ERROR);
 			if (this->_debug_server) {
 				this->_debug_server->report_halt(GdbServer::HaltReason::IllegalInstruction);
+			}
+			break;
+		case Exception::Breakpoint:
+			spdlog::info("breakpoint hit: pc = {:#08x}", pc);
+
+			this->_cpu->HaltExecution(static_cast<Dynarmic::HaltReason>(0));
+			if (this->_debug_server) {
+				this->_debug_server->report_halt(GdbServer::HaltReason::SwBreak);
 			}
 			break;
 		default:

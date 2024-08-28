@@ -40,7 +40,7 @@ const char* target_description() {
 	return R"(<?xml version="1.0"?>
 <!DOCTYPE target SYSTEM "gdb-target.dtd">
 <target>
-	<architecture>arm</architecture>
+	<architecture>thumb</architecture>
 	<osabi>GNU/Linux</osabi>
 	<xi:include href="base-reg.xml"/>
 </target>)";
@@ -173,8 +173,8 @@ bool GdbServer::dispatch_query(const std::string_view& command) {
 	} else if (query == "C") {
 		this->send_message("QC1");
 	} else if (query == "HostInfo") {
-		// hardcoded fields, triple = arm--linux-android
-		this->send_message("triple:61726d2d2d6c696e75782d616e64726f6964;ptrsize:4;endian:little;hostname:73696c656e65;os_version:0.0.1;vm-page-size:4096;");
+		// hardcoded fields, triple = thumb--linux-android
+		this->send_message("triple:7468756D622D2D6C696E75782D616E64726F6964;ptrsize:4;endian:little;hostname:73696c656e65;os_version:0.0.1;vm-page-size:4096;");
 	} else if (query == "ProcessInfo") {
 		this->send_message("pid:1;parent-pid:1;real-uid:1;real-gid:1;effective-uid:1;effective-gid:1;");
 	} else if (query == "Attached") {
@@ -388,6 +388,53 @@ bool GdbServer::dispatch_command(const std::string_view& command) {
 			// note: the command does support redirecting execution - this doesn't
 			this->continue_exec();
 			return true;
+		case 'Z': {
+			auto watch_type = command[1];
+
+			auto type_begin = command.rfind(',');
+			auto offset = parse_hex<std::uint32_t>(command.data(), 3, type_begin);
+			auto kind = parse_hex<std::uint32_t>(command.data(), type_begin + 1, command.length());
+
+			if (kind != 0) {
+				// i don't know how to find these types
+				return false;
+			}
+
+			// sw_break == '0' = software
+			// sw_break == '1' = hardware
+			if (watch_type != '0') {
+				return false;
+			}
+
+			auto original = this->_memory->read_halfword(offset);
+			this->_memory->write_halfword(offset, 0xbe00);
+
+			_sw_breakpoints[offset] = original;
+
+			this->send_message("OK");
+			return true;
+		}
+		case 'z': {
+			auto sw_break = command[1];
+
+			auto type_begin = command.rfind(',');
+			auto offset = parse_hex<std::uint32_t>(command.data(), 3, type_begin);
+			auto type = parse_hex<std::uint32_t>(command.data(), type_begin + 1, command.length());
+
+			if (type != 0) {
+				return false;
+			}
+
+			if (sw_break != '0') {
+				return false;
+			}
+
+			auto original = _sw_breakpoints.at(offset);
+			this->_memory->write_halfword(offset, original);
+
+			this->send_message("OK");
+			return true;
+		}
 	}
 
 	return false;
@@ -441,6 +488,12 @@ void GdbServer::handle_events() {
 }
 
 void GdbServer::send_halt_response() {
+	if (_last_halt == HaltReason::SwBreak) {
+		std::stringstream ss;
+		this->send_message("S 05 swbreak");
+		return;
+	}
+
 	std::stringstream ss;
 	ss << "S" << std::setfill('0') << std::setw(2) << std::hex << static_cast<uint32_t>(this->_last_halt);
 	this->send_message(ss.str());

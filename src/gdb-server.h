@@ -5,6 +5,7 @@
 
 #include <optional>
 #include <memory>
+#include <unordered_map>
 
 #include <dynarmic/interface/A32/a32.h>
 
@@ -24,7 +25,9 @@ public:
 		Abort = 6,
 		EmulationTrap = 7,
 		Kill = 9,
-		SegmentationFault = 11
+		SegmentationFault = 11,
+
+		SwBreak = 99
 	};
 
 private:
@@ -35,6 +38,8 @@ private:
 	bool _skip_ack{false};
 	HaltReason _last_halt{HaltReason::Breakpoint};
 	bool _halt_on_next{false};
+
+	std::unordered_map<std::uint32_t, std::uint32_t> _sw_breakpoints{};
 
 	std::shared_ptr<PagedMemory> _memory{nullptr};
 	std::shared_ptr<Dynarmic::A32::Jit> _cpu{nullptr};

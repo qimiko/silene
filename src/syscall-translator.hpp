@@ -35,7 +35,7 @@ namespace SyscallTranslator {
 		} else {
 			// otherwise, our value is on the stack
 			auto sp = env.current_cpu()->Regs()[13];
-			auto sp_offs = (idx - 4) * 4;
+			auto sp_offs = sp + (idx - 4) * 4;
 
 			return env.memory_manager()->read_word(sp_offs);
 		}
@@ -45,10 +45,10 @@ namespace SyscallTranslator {
 		if (idx < 4) {
 			env.current_cpu()->Regs()[idx] = value;
 		} else {
-			auto sp = env.current_cpu()->Regs()[13];
-			return env.memory_manager()->write_word(sp, value);
+			auto& sp = env.current_cpu()->Regs()[13];
+			env.memory_manager()->write_word(sp, value);
 
-			env.current_cpu()->Regs()[13] -= 4;
+			sp -= 4;
 		}
 	}
 
@@ -149,6 +149,74 @@ namespace SyscallTranslator {
 			auto return_idx = 0u;
 			return SyscallTranslator::translate_reg<R>(env, return_idx);
 		}
+	}
+}
+
+class Variadic {
+protected:
+	std::uint32_t _arg_idx;
+	Environment& _env;
+
+public:
+	Variadic(std::uint32_t idx, Environment& env) : _arg_idx(idx), _env(env) {}
+
+	template <typename T>
+	T next() {
+		return SyscallTranslator::translate_reg<T>(_env, _arg_idx);
+	}
+};
+
+/**
+ * A va_list is like a variadic function,
+ * but all args go onto the stack and
+ * the given arg is to where that stack offset begins
+ */
+class VaList : Variadic {
+private:
+	std::uint32_t _stack_ptr;
+
+public:
+	VaList(Environment& env, std::uint32_t stack_begin)
+		: Variadic(4, env), _stack_ptr(stack_begin) {}
+
+	template <typename T>
+	T next() {
+		// this is a hacky way of going about it, but requires the least work
+		auto& sp_ptr = _env.current_cpu()->Regs()[13];
+		auto sp = sp_ptr;
+
+		sp_ptr = _stack_ptr;
+		auto r = Variadic::next<T>();
+		sp_ptr = sp;
+
+		return r;
+	}
+};
+
+namespace SyscallTranslator {
+	template <>
+	inline void translate_call_arg(Environment& env, std::uint32_t& idx, Variadic value) {
+		throw std::runtime_error("Translating variadic args is currently unsupported");
+	}
+
+	template <>
+	inline Variadic translate_reg(Environment& env, std::uint32_t& idx) {
+		return Variadic(idx, env);
+	}
+
+	template <>
+	inline void translate_call_arg(Environment& env, std::uint32_t& idx, VaList value) {
+		throw std::runtime_error("Translating variadic args is currently unsupported");
+	}
+
+	template <>
+	inline VaList translate_reg(Environment& env, std::uint32_t& idx) {
+		// this is how they seemed to work from my poking at things
+		// sp = base address for args
+		auto sp = pull_arg(env, idx);
+		idx++;
+
+		return VaList(env, sp);
 	}
 }
 

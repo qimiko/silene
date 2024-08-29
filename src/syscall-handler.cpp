@@ -4,7 +4,7 @@ void SyscallHandler::on_symbol_call(Environment& env) {
 	// resolve symbol
 	auto pc = env.current_cpu()->Regs()[15];
 	auto lr = env.current_cpu()->Regs()[14];
-	spdlog::debug("resolve symbol: pc = {:#08x}, lr = {:#08x}", pc, lr);
+	spdlog::trace("resolve symbol: pc = {:#08x}, lr = {:#08x}", pc, lr);
 
 	try {
 		// todo: literally anything

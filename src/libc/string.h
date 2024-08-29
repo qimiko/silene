@@ -49,6 +49,15 @@ std::uint32_t emu_memcpy(Environment& env, std::uint32_t destination_ptr, std::u
 	return destination_ptr;
 }
 
+std::uint32_t emu_memmove(Environment& env, std::uint32_t destination_ptr, std::uint32_t source_ptr, std::uint32_t num) {
+	auto destination = env.memory_manager()->read_bytes<std::uint8_t>(destination_ptr);
+	auto source = env.memory_manager()->read_bytes<std::uint8_t>(source_ptr);
+
+	std::memmove(destination, source, num);
+
+	return destination_ptr;
+}
+
 std::uint32_t emu_strlen(Environment& env, std::uint32_t str_ptr) {
 	auto str = env.memory_manager()->read_bytes<char>(str_ptr);
 	return std::strlen(str);

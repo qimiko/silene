@@ -39,4 +39,17 @@ std::int32_t emu_vsprintf(Environment& env, std::uint32_t output_ptr, std::uint3
 	return 0;
 }
 
+std::int32_t emu_fprintf(Environment& env, std::uint32_t output_file, std::uint32_t format_ptr) {
+	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
+
+	spdlog::info("TODO: fprintf({}) - {}", output_file, format);
+	return 0;
+}
+
+std::int32_t emu_fputc(Environment& env, std::int32_t character, std::uint32_t output_file) {
+	spdlog::info("TODO: fputc({}, {:#x})", output_file, character);
+
+	return character;
+}
+
 #endif

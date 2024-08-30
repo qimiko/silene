@@ -282,7 +282,7 @@ bool GdbServer::dispatch_command(const std::string_view& command) {
 	auto type = command.front();
 	auto data = command.substr(1);
 
-	switch (command[0]) {
+	switch (type) {
 		case 'Q':
 			return this->dispatch_set(data);
 		case 'q':

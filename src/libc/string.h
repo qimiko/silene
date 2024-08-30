@@ -77,4 +77,18 @@ std::int32_t emu_memcmp(Environment& env, std::uint32_t lhs_ptr, std::uint32_t r
 	return std::memcmp(lhs, rhs, num);
 }
 
+std::uint32_t emu_memchr(Environment& env, std::uint32_t ptr, std::int32_t ch, std::uint32_t count) {
+	auto source = env.memory_manager()->read_bytes<std::uint8_t>(ptr);
+
+	auto r = reinterpret_cast<std::uint8_t*>(std::memchr(source, ch, count));
+
+	if (r == 0) {
+		return 0;
+	}
+
+	auto offset = reinterpret_cast<std::ptrdiff_t>(r - source);
+
+	return ptr + static_cast<std::uint32_t>(offset);
+}
+
 #endif

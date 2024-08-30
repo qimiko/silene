@@ -14,12 +14,6 @@
 #include "libc/setjmp.h"
 
 std::uint32_t LibcState::allocate_memory(std::uint32_t size, bool zero_mem) {
-	if (zero_mem) {
-		spdlog::debug("TODO: calloc");
-	} else {
-		spdlog::debug("TODO: malloc");
-	}
-
 	// TODO: this implementation is terrible.
 
 	auto next = this->_memory->get_next_addr();
@@ -37,12 +31,9 @@ std::uint32_t LibcState::allocate_memory(std::uint32_t size, bool zero_mem) {
 }
 
 void LibcState::free_memory(std::uint32_t vaddr) {
-	spdlog::debug("TODO: free");
 }
 
 std::uint32_t LibcState::reallocate_memory(std::uint32_t vaddr, std::uint32_t size) {
-	spdlog::debug("TODO: realloc");
-
 	return vaddr;
 }
 
@@ -67,6 +58,7 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, pthread_mutex_unlock);
 	REGISTER_FN(env, memcpy);
 	REGISTER_FN(env, memmove);
+	REGISTER_FN(env, memchr);
 	REGISTER_FN(env, malloc);
 	REGISTER_FN(env, free);
 	REGISTER_FN(env, realloc);
@@ -86,6 +78,7 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, strcpy);
 	REGISTER_FN(env, strncpy);
 	REGISTER_FN(env, vsprintf);
+	REGISTER_FN(env, vsnprintf);
 	REGISTER_FN(env, setjmp);
 	REGISTER_FN(env, longjmp);
 	REGISTER_FN(env, fprintf);

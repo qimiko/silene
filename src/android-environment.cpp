@@ -79,7 +79,7 @@ void AndroidEnvironment::post_init() {
 	auto init_fns = this->_program_loader.get_init_functions();
 
 	for (const auto& fn : init_fns) {
-		if (fn == 0 || fn == -1) {
+		if (fn == 0 || fn == 0xffff'ffff) {
 			continue;
 		}
 
@@ -105,9 +105,6 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 
 	// strip the thumb bit
 	this->_cpu->Regs()[15] = fn_addr;
-
-	// track this for debugging idk
-	auto last_return = 0u;
 
 	while (1) {
 		ticks_left = 10;

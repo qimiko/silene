@@ -274,6 +274,7 @@ void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint3
 
 	}
 
+	/*
 	// write this one day... currently not necessary
 	if (info.fini_function_offset != 0) {
 		auto fini_function = info.fini_function_offset;
@@ -283,6 +284,7 @@ void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint3
 		auto fini_array = base_addr + info.fini_array_offset;
 		auto fini_size = info.fini_array_count;
 	}
+	*/
 }
 
 std::uint32_t Elf::Loader::map_elf(const Elf::File& elf) {
@@ -296,6 +298,7 @@ std::uint32_t Elf::Loader::map_elf(const Elf::File& elf) {
 
 	// in ghidra, this ends up being 0x10000 - bias = 0xf000
 	spdlog::info("loading object with bias {:#08x}", load_bias);
+	this->_load_addr = load_bias;
 
 	std::span<Elf::DynamicSectionEntry> dynamic_segment{};
 	for (const auto& segment : elf.program_headers()) {
@@ -343,7 +346,7 @@ void Elf::Loader::add_stub_symbol(std::uint32_t vaddr, const std::string_view& s
 	spdlog::info("adding stub symbol {} at {:#08x}", symbol, vaddr);
 }
 
-const std::uint32_t Elf::Loader::get_symbol_addr(const std::string_view& symbol) const {
+std::uint32_t Elf::Loader::get_symbol_addr(const std::string_view& symbol) const {
 	auto symbol_str = std::string(symbol);
 	if (auto it = this->_loaded_symbols.find(symbol_str); it != this->_loaded_symbols.end()) {
 		return it->second;

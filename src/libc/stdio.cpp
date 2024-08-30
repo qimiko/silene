@@ -19,7 +19,7 @@ std::int32_t emu_fputs(Environment& env, std::uint32_t str_ptr, std::uint32_t st
 }
 
 std::int32_t emu_sprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t format_ptr) {
-	auto output = env.memory_manager()->read_bytes<char>(output_ptr);
+	// auto output = env.memory_manager()->read_bytes<char>(output_ptr);
 	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
 
 	spdlog::info("TODO: sprintf - {}", format);
@@ -27,7 +27,7 @@ std::int32_t emu_sprintf(Environment& env, std::uint32_t output_ptr, std::uint32
 }
 
 std::int32_t emu_vsprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t format_ptr) {
-	auto output = env.memory_manager()->read_bytes<char>(output_ptr);
+	// auto output = env.memory_manager()->read_bytes<char>(output_ptr);
 	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
 
 	spdlog::info("TODO: vsprintf - {}", format);

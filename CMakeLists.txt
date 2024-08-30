@@ -21,6 +21,8 @@ set(SRC_FILES
 
 add_executable(silene ${SRC_FILES})
 
+target_compile_options(silene PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
+
 include(cmake/CPM.cmake)
 
 CPMAddPackage("gh:merryhime/dynarmic#6.5.0")

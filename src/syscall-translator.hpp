@@ -110,10 +110,12 @@ namespace SyscallTranslator {
 		inline void translate_wrap_helper(R(*fn)(Environment& f, Args... args), Environment& env) {
 			auto idx = 0u;
 
+			std::tuple<Environment&, Args...> args{env, SyscallTranslator::translate_reg<Args>(env, idx)...};
+
 			if constexpr (std::is_void_v<R>) {
-				fn(env, SyscallTranslator::translate_reg<Args>(env, idx)...);
+				std::apply(fn, args);
 			} else {
-				auto r = fn(env, SyscallTranslator::translate_reg<Args>(env, idx)...);
+				auto r = std::apply(fn, args);
 
 				auto return_idx = 0u;
 				SyscallTranslator::translate_call_arg(env, return_idx, r);

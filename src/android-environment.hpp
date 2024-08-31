@@ -159,8 +159,8 @@ public:
 	// should be called before anything involving the memory is performed
 	void pre_init();
 
-	// should be called after all program loading is done
-	void post_init();
+	// should be called after individual libraries are loaded
+	void post_load();
 
 	void set_cpu(std::shared_ptr<Dynarmic::A32::Jit> cpu) {
 		this->_cpu = cpu;

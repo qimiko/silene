@@ -16,6 +16,7 @@
 #include <spdlog/spdlog.h>
 
 #include "android-environment.hpp"
+#include "android-coprocessor.hpp"
 #include "paged-memory.hpp"
 #include "elf.h"
 #include "elf-loader.h"
@@ -90,12 +91,16 @@ int main(int argc, char** argv) {
 */
 
 	AndroidEnvironment env{};
+	auto cp15 = std::make_shared<AndroidCP15>();
+
 	Dynarmic::A32::UserConfig user_config{};
 
 	auto monitor = Dynarmic::ExclusiveMonitor{1};
 	// this feels like a hack..?
 	user_config.processor_id = 0;
 	user_config.global_monitor = &monitor;
+
+	user_config.coprocessors[15] = cp15;
 
 	// user_config.very_verbose_debugging_output = true;
 	user_config.callbacks = &env;
@@ -112,9 +117,10 @@ int main(int argc, char** argv) {
 	env.pre_init();
 
 	env.program_loader().map_elf(zlib);
-	env.program_loader().map_elf(elf);
+	env.post_load();
 
-	env.post_init();
+	env.program_loader().map_elf(elf);
+	env.post_load();
 
 	spdlog::info("init fns done");
 

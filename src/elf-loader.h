@@ -71,6 +71,10 @@ public:
 		return this->_init_functions;
 	};
 
+	void clear_init_functions() {
+		this->_init_functions.clear();
+	}
+
 	std::uint32_t get_symbol_addr(const std::string_view& symbol) const;
 	bool has_symbol(const std::string_view& symbol) const;
 

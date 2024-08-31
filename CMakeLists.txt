@@ -16,6 +16,7 @@ set(SRC_FILES
 	src/jni.cpp
 	src/syscall-handler.cpp
 	src/android-environment.cpp
+	src/android-coprocessor.cpp
 	src/main.cpp
 )
 

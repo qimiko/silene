@@ -75,7 +75,7 @@ void AndroidEnvironment::pre_init() {
 	this->_jni.pre_init(*this);
 }
 
-void AndroidEnvironment::post_init() {
+void AndroidEnvironment::post_load() {
 	auto init_fns = this->_program_loader.get_init_functions();
 
 	for (const auto& fn : init_fns) {
@@ -85,6 +85,8 @@ void AndroidEnvironment::post_init() {
 
 		this->run_func(fn);
 	}
+
+	this->_program_loader.clear_init_functions();
 }
 
 void AndroidEnvironment::run_func(std::uint32_t vaddr) {

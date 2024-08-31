@@ -42,6 +42,11 @@ int main(int argc, char** argv) {
 		->capture_default_str()
 		->check(CLI::ExistingDirectory);
 
+	std::string support_dir = "./support/";
+	app.add_option("--link", support_dir, "path to load support binaries from")
+		->capture_default_str()
+		->check(CLI::ExistingDirectory);
+
 	CLI11_PARSE(app, argc, argv);
 
 	if (!std::filesystem::is_directory(resources_dir)) {
@@ -64,6 +69,11 @@ int main(int argc, char** argv) {
 		std::cout << "elf file does not match required parameters" << std::endl;
 		return 1;
 	}
+
+	std::filesystem::path support_path{support_dir};
+
+	auto zlib_path = support_path / "libz.so";
+	auto zlib = Elf::File(zlib_path.string());
 
 /*
 	for (const auto& segment : elf.program_headers()) {
@@ -101,6 +111,7 @@ int main(int argc, char** argv) {
 
 	env.pre_init();
 
+	env.program_loader().map_elf(zlib);
 	env.program_loader().map_elf(elf);
 
 	env.post_init();

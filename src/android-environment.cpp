@@ -4,6 +4,9 @@ void AndroidEnvironment::CallSVC(std::uint32_t swi) {
 	spdlog::trace("svc call: {}", swi);
 
 	switch (swi) {
+		case 0:
+			this->_cpu->HaltExecution(HALT_REASON_KERNEL_SYSCALL);
+			break;
 		case 1:
 			this->_cpu->HaltExecution(HALT_REASON_FN_END);
 			break;
@@ -12,6 +15,9 @@ void AndroidEnvironment::CallSVC(std::uint32_t swi) {
 			// some functions require calling other functions, which cannot be done in the middle of a callback
 			this->_cpu->HaltExecution(HALT_REASON_HANDLE_SYSCALL);
 			break;
+		default:
+			spdlog::error("thrown unexpected syscall of {}", swi);
+			throw std::runtime_error("unexpected svc call");
 	}
 }
 
@@ -123,6 +129,11 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 		if (Dynarmic::Has(halt_reason, HALT_REASON_HANDLE_SYSCALL)) {
 			this->_syscall_handler.on_symbol_call(*this);
 			halt_reason &= ~HALT_REASON_HANDLE_SYSCALL;
+		}
+
+		if (Dynarmic::Has(halt_reason, HALT_REASON_KERNEL_SYSCALL)) {
+			this->_syscall_handler.on_kernel_call(*this);
+			halt_reason &= ~HALT_REASON_KERNEL_SYSCALL;
 		}
 
 		// 0 means it ran out of steps

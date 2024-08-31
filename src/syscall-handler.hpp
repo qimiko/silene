@@ -20,15 +20,22 @@ class SyscallHandler {
 	using HandlerFunction = void(*)(Environment& env);
 
 	std::unordered_map<std::uint32_t, HandlerFunction> fns{};
+	std::unordered_map<std::uint32_t, HandlerFunction> _kernel_fns{};
 
 public:
 	void on_symbol_call(Environment& env);
+	void on_kernel_call(Environment& env);
 
 	/**
 	 * creates a stub syscall function and registers it
 	 * should return the address of the written function
 	*/
 	std::uint32_t create_stub_fn(HandlerFunction fn);
+
+	/**
+	 * registers a syscall for use in libc
+	 */
+	void register_kernel_fn(std::uint32_t call, HandlerFunction fn);
 
 	/**
 	 * writes a stub to an existing place in memory.

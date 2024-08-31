@@ -7,12 +7,28 @@ void SyscallHandler::on_symbol_call(Environment& env) {
 	spdlog::trace("resolve symbol: pc = {:#08x}, lr = {:#08x}", pc, lr);
 
 	try {
-		// todo: literally anything
 		auto fn_ptr = this->fns.at(pc);
 		fn_ptr(env);
 	} catch (const std::out_of_range& e) {
 		spdlog::warn("symbol resolution failed: lr = {:#08x}", lr);
 	}
+}
+
+void SyscallHandler::on_kernel_call(Environment& env) {
+	auto call_number = env.current_cpu()->Regs()[7];
+	spdlog::trace("resolve kernel: call = {:#08x}", call_number);
+
+	try {
+		auto fn_ptr = this->_kernel_fns.at(call_number);
+		fn_ptr(env);
+	} catch (const std::out_of_range& e) {
+		auto pc = env.current_cpu()->Regs()[15];
+		spdlog::warn("failed to resolve kernel call: pc = {:#08x}, call = {:#x}", pc, call_number);
+	}
+}
+
+void SyscallHandler::register_kernel_fn(std::uint32_t call, HandlerFunction fn) {
+	this->_kernel_fns[call] = fn;
 }
 
 std::uint32_t SyscallHandler::create_stub_fn(HandlerFunction fn) {

@@ -30,6 +30,7 @@ public:
 	static constexpr auto HALT_REASON_FN_END = Dynarmic::HaltReason::UserDefined1;
 	static constexpr auto HALT_REASON_HANDLE_SYSCALL = Dynarmic::HaltReason::UserDefined2;
 	static constexpr auto HALT_REASON_ERROR = Dynarmic::HaltReason::UserDefined3;
+	static constexpr auto HALT_REASON_KERNEL_SYSCALL = Dynarmic::HaltReason::UserDefined4;
 
 	// default initialize with an instance of memory
 	std::shared_ptr<PagedMemory> _memory{

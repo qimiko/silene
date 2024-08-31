@@ -194,25 +194,12 @@ void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint3
 
 	// todo: look into loading dependencies when needed
 
-	// perform relocations
-
 	LoaderState state = {
 		base_addr, reloc_offset, info
 	};
 
-	if (info.plt_reloc_offset != 0) {
-		spdlog::info("performing plt relocations: {:#08x}", info.plt_reloc_offset);
-		this->relocate(elf, state, info.plt_reloc_offset, info.plt_reloc_count);
-	}
-
-	if (info.rel_table_offset != 0) {
-		spdlog::info("performing relocations: {:#08x}", info.rel_table_offset);
-		this->relocate(elf, state, info.rel_table_offset, info.rel_table_count);
-	}
-
-	spdlog::info("relocations done!");
-
 	// load addresses into global symbol table
+	// this happens first, as some relocations may depend on the existence of a symbol in the binary
 
 	auto string_table_addr = state.base_address + state.dynamic.string_table_offset;
 
@@ -246,6 +233,20 @@ void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint3
 
 		this->_loaded_symbols.insert({symbol_name, base_addr + symbol.value});
 	}
+
+	// perform relocations
+
+	if (info.plt_reloc_offset != 0) {
+		spdlog::info("performing plt relocations: {:#08x}", info.plt_reloc_offset);
+		this->relocate(elf, state, info.plt_reloc_offset, info.plt_reloc_count);
+	}
+
+	if (info.rel_table_offset != 0) {
+		spdlog::info("performing relocations: {:#08x}", info.rel_table_offset);
+		this->relocate(elf, state, info.rel_table_offset, info.rel_table_count);
+	}
+
+	spdlog::info("relocations done!");
 
 	// add functions into init/fini arrays
 	// dt_init first, dt_init_array functions next

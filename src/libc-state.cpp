@@ -27,6 +27,10 @@ std::uint32_t LibcState::allocate_memory(std::uint32_t size, bool zero_mem) {
 
 	this->_memory->allocate(size);
 
+	if (zero_mem) {
+		this->_memory->set(next, 0, size);
+	}
+
 	return next;
 }
 
@@ -34,7 +38,17 @@ void LibcState::free_memory(std::uint32_t vaddr) {
 }
 
 std::uint32_t LibcState::reallocate_memory(std::uint32_t vaddr, std::uint32_t size) {
-	return vaddr;
+	auto new_ptr = this->allocate_memory(size, false);
+
+	auto src = this->_memory->read_bytes<std::uint8_t>(vaddr);
+	auto dest = this->_memory->read_bytes<std::uint8_t>(new_ptr);
+
+	// we should really track memory sizes, this could create issues
+	std::memcpy(dest, src, size);
+
+	this->free_memory(vaddr);
+
+	return new_ptr;
 }
 
 void LibcState::register_destructor(StaticDestructor destructor) {

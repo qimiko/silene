@@ -105,7 +105,7 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 
 	auto fn_addr = vaddr & ~0x1;
 
-	spdlog::info("calling fn: {:#08x}", fn_addr);
+	spdlog::trace("calling fn: {:#08x}", fn_addr);
 
 	// stack ptr, return ptr, pc
 	this->_cpu->Regs()[13] = 0xffff'fff0;
@@ -138,7 +138,7 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 
 		// 0 means it ran out of steps
 		if (!halt_reason) {
-			this->ticks_left += 10000;
+			this->ticks_left += 50000;
 			continue;
 		}
 

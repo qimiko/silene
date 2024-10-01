@@ -12,7 +12,8 @@ Progress may be slow.
 
 ### What works?
 
-- Nothing.
+- It gets ingame
+- On older versions, it can even play a level!
 
 ### What doesn't work?
 

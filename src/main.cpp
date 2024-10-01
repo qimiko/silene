@@ -23,6 +23,52 @@
 
 #include "hook/fileutils.h"
 
+#ifdef SILENE_USE_EGL
+#include <GLES2/gl2.h>
+#include <EGL/egl.h>
+#endif
+
+#include <GLFW/glfw3.h>
+
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+
+void glfw_error_callback(int error, const char* description) {
+	spdlog::error("GLFW Error: {}", description);
+}
+
+void glfw_mouse_callback(GLFWwindow* window, int button, int action, int mods) {
+	if (button != GLFW_MOUSE_BUTTON_LEFT) {
+		return;
+	}
+
+	if (auto env = reinterpret_cast<AndroidEnvironment*>(glfwGetWindowUserPointer(window)); env != nullptr) {
+		auto jni_env_ptr = env->jni().get_env_ptr();
+		double xpos, ypos;
+
+		glfwGetCursorPos(window, &xpos, &ypos);
+
+		if (action == GLFW_PRESS) {
+			env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeTouchesBegin", jni_env_ptr, 0, 1, static_cast<float>(xpos * 2), static_cast<float>(ypos * 2));
+		} else if (action == GLFW_RELEASE) {
+			env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeTouchesEnd", jni_env_ptr, 0, 1, static_cast<float>(xpos * 2), static_cast<float>(ypos * 2));
+		}
+	}
+}
+
+void glfw_mouse_move_callback(GLFWwindow* window, double xpos, double ypos) {
+	if (auto env = reinterpret_cast<AndroidEnvironment*>(glfwGetWindowUserPointer(window)); env != nullptr) {
+		auto jni_env_ptr = env->jni().get_env_ptr();
+
+		auto ids = env->jni().create_ref(std::vector{ 1 });
+		auto xs = env->jni().create_ref(std::vector{static_cast<float>(xpos * 2)});
+		auto ys = env->jni().create_ref(std::vector{static_cast<float>(ypos * 2)});
+
+		env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeTouchesMove", jni_env_ptr, 0, ids, xs, ys);
+	}
+}
+
 int main(int argc, char** argv) {
 	CLI::App app;
 	argv = app.ensure_utf8(argv);
@@ -38,10 +84,17 @@ int main(int argc, char** argv) {
 	bool enable_debugging = false;
 	app.add_flag("-d,--debug", enable_debugging, "enables debugging through gdb on port 5039");
 
+	/*
 	std::string resources_dir = "./assets/";
 	app.add_option("--assets", resources_dir, "determines where cocos resources should be redirected to")
 		->capture_default_str()
 		->check(CLI::ExistingDirectory);
+	*/
+
+	std::string app_apk = "./game.apk";
+	app.add_option("--app", app_apk, "Determines the APK file to use for resources")
+		->capture_default_str()
+		->check(CLI::ExistingFile);
 
 	std::string support_dir = "./support/";
 	app.add_option("--link", support_dir, "path to load support binaries from")
@@ -50,10 +103,12 @@ int main(int argc, char** argv) {
 
 	CLI11_PARSE(app, argc, argv);
 
+	/*
 	if (!std::filesystem::is_directory(resources_dir)) {
 		std::cout << "resources directory does not exist: " << resources_dir << std::endl;
 		return 0;
 	}
+	*/
 
 	if (verbose) {
 		spdlog::set_level(spdlog::level::debug);
@@ -73,24 +128,64 @@ int main(int argc, char** argv) {
 
 	std::filesystem::path support_path{support_dir};
 
+	/*
+	auto libc_path = support_path / "libc.so";
+	auto libc = Elf::File(libc_path.string());
+	*/
+
 	auto zlib_path = support_path / "libz.so";
 	auto zlib = Elf::File(zlib_path.string());
 
-/*
-	for (const auto& segment : elf.program_headers()) {
-		std::cout << "segment: type = " << static_cast<std::uint32_t>(segment.type) << " ";
-		std::cout << "offset = 0x" << std::hex << segment.segment_offset << std::dec << " ";
-		std::cout << "vaddr = 0x" << std::hex << segment.segment_virtual_address << std::dec << " ";
-		std::cout << "addr = 0x" << std::hex << segment.segment_physical_address << std::dec << " ";
-		std::cout << "filesz = 0x" << std::hex << segment.segment_file_size << std::dec << " ";
-		std::cout << "memsz = 0x" << std::hex << segment.segment_memory_size << std::dec << " ";
-		std::cout << "flags = " << segment.flags << " ";
-		std::cout << "align = 0x" << std::hex << segment.alignment << std::dec;
-		std::cout << std::endl;
+	glfwSetErrorCallback(glfw_error_callback);
+
+	if (!glfwInit())
+		return 1;
+
+	#ifdef SILENE_USE_EGL
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+	glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
+	#else
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+  // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	#endif
+
+	glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GL_TRUE);
+
+	auto window = glfwCreateWindow(640, 480, "Silene", nullptr, nullptr);
+	if (!window) {
+		glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
+		window = glfwCreateWindow(640, 480, "Silene", nullptr, nullptr);
+		if (!window) {
+			glfwTerminate();
+			return 1;
+		}
 	}
-*/
+
+	glfwMakeContextCurrent(window);
+	glfwSwapInterval(1);
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+	ImGui::StyleColorsLight();
+
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+
+	#ifdef SILENE_USE_EGL
+	ImGui_ImplOpenGL3_Init("#version 300 es");
+	#else
+	ImGui_ImplOpenGL3_Init("#version 320");
+	#endif
 
 	AndroidEnvironment env{};
+	glfwSetWindowUserPointer(window, &env);
+
 	auto cp15 = std::make_shared<AndroidCP15>();
 
 	Dynarmic::A32::UserConfig user_config{};
@@ -108,13 +203,20 @@ int main(int argc, char** argv) {
 	auto cpu = std::make_shared<Dynarmic::A32::Jit>(user_config);
 	env.set_cpu(cpu);
 
+	/*
 	env.set_assets_dir(resources_dir);
+	*/
 
 	if (enable_debugging) {
 		env.begin_debugging();
 	}
 
 	env.pre_init();
+
+	/*
+	env.program_loader().map_elf(libc);
+	env.post_load();
+	*/
 
 	env.program_loader().map_elf(zlib);
 	env.post_load();
@@ -138,12 +240,18 @@ int main(int argc, char** argv) {
 		env.call_symbol<void>("JNI_OnLoad", jvm_ptr);
 	}
 
+/*
 	if (auto filedata = env.program_loader().get_symbol_addr("_ZN7cocos2d18CCFileUtilsAndroid11getFileDataEPKcS2_Pm"); filedata != 0) {
 		env.syscall_handler().replace_fn(filedata, &SyscallTranslator::translate_wrap<&hook_CCFileUtils_getFileData>);
 	} else if (auto legacy_filedata = env.program_loader().get_symbol_addr("_ZN7cocos2d11CCFileUtils11getFileDataEPKcS2_Pm"); legacy_filedata != 0) {
 		env.syscall_handler().replace_fn(legacy_filedata, &SyscallTranslator::translate_wrap<&hook_CCFileUtils_getFileData>);
 	}
+*/
 
+	glfwSetMouseButtonCallback(window, &glfw_mouse_callback);
+	glfwSetCursorPosCallback(window, &glfw_mouse_move_callback);
+
+	env.libc().expose_file("/application_resources.apk", app_apk);
 
 	// first arg should be a jstring to the path
 	auto path_string = env.jni().create_string_ref("/application_resources.apk");
@@ -158,11 +266,70 @@ int main(int argc, char** argv) {
 	env.jni().remove_ref(path_string);
 
 	// last two args are width/height
-	env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInit", jni_env_ptr, 0, 1920, 1080);
 
-	spdlog::info("r0: {:#08x}, pc: {:#08x}", cpu->Regs()[0], cpu->Regs()[15]);
+	auto init_finished = false;
 
-	spdlog::info("done!");
+	auto last_time = glfwGetTime();
+	auto last_update_time = glfwGetTime();
+	auto accumulated_time = 0.0f;
+
+	while (!glfwWindowShouldClose(window)) {
+		auto current_time = glfwGetTime();
+    auto dt = current_time - last_time;
+
+		last_time = current_time;
+    accumulated_time += dt;
+
+		if (accumulated_time < (1.0 / 60.0)) {
+			continue;
+		}
+
+		auto update_dt = current_time - last_update_time;
+    last_update_time = current_time;
+    accumulated_time = 0.0f;
+
+		glfwPollEvents();
+
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		if (!init_finished) {
+			ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always, ImVec2(0.0f, 0.0f));
+			if (ImGui::Begin("Loading Dialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
+				ImGui::Text("Loading...");
+			}
+		} else {
+			ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always, ImVec2(0.0f, 0.0f));
+			if (ImGui::Begin("Info Dialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
+				ImGui::Text("FPS: %.0f", 1.0/update_dt);
+			}
+		}
+
+		ImGui::End();
+
+		ImGui::Render();
+
+		if (init_finished) {
+			env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeRender", jni_env_ptr, 0);
+		} else {
+			env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInit", jni_env_ptr, 0, 640 * 2, 480 * 2);
+			spdlog::info("init finished");
+
+			init_finished = true;
+		}
+
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		glfwSwapBuffers(window);
+	}
+
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
+	glfwDestroyWindow(window);
+	glfwTerminate();
 
 	return 0;
 }

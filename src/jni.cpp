@@ -13,6 +13,7 @@ void JniState::pre_init(Environment& env) {
 
 	JNIEnv jni_env;
 
+	jni_env.ptr_newStringUTF = REGISTER_STUB(env, newStringUTF);
 	jni_env.ptr_getStringUTFChars = REGISTER_STUB(env, getStringUTFChars);
 	jni_env.ptr_releaseStringUTFChars = REGISTER_STUB(env, releaseStringUTFChars);
 	jni_env.ptr_findClass = REGISTER_STUB(env, findClass);
@@ -36,6 +37,8 @@ void JniState::pre_init(Environment& env) {
 	this->_memory->copy(vm_write_addr, &vm, sizeof(JavaVM));
 	this->_vm_ptr = vm_write_addr;
 
+	this->_memory->allocate(sizeof(JavaVM));
+
 	auto env_write_addr = this->_memory->get_next_addr();
 
 	if (env_write_addr & 1) {
@@ -49,6 +52,8 @@ void JniState::pre_init(Environment& env) {
 	this->_memory->copy(env_write_addr, &jni_env, sizeof(JNIEnv));
 	this->_env_ptr = env_write_addr;
 
+	this->_memory->allocate(sizeof(JNIEnv));
+
 	REGISTER_STATIC("com/customRobTop/BaseRobTopActivity", "getUserID;()Ljava/lang/String;", get_user_id);
 }
 
@@ -58,6 +63,11 @@ std::uint32_t JniState::get_vm_ptr() const {
 
 std::uint32_t JniState::get_env_ptr() const {
 	return this->_env_ptr;
+}
+
+std::uint32_t JniState::emu_newStringUTF(Environment& env, std::uint32_t java_env, std::uint32_t string_ptr) {
+	auto str = env.memory_manager()->read_bytes<char>(string_ptr);
+	return env.jni().create_string_ref(str);
 }
 
 std::uint32_t JniState::emu_getStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t string, std::uint32_t is_copy_ptr) {
@@ -143,7 +153,7 @@ void JniState::remove_ref(std::uint32_t vaddr) {
 	this->_object_refs.erase(vaddr);
 }
 
-std::string& JniState::get_ref_value(std::uint32_t vaddr) {
+std::string JniState::get_ref_value(std::uint32_t vaddr) {
 	return this->_object_refs.at(vaddr);
 }
 
@@ -156,7 +166,7 @@ std::uint32_t JniState::create_string_ref(const std::string_view& str) {
 
 	this->_object_refs[addr] = std::string(str);
 
-	spdlog::info("create string ref: {:#08x}", addr);
+	spdlog::trace("create string ref: {:#08x}", addr);
 
 	return addr;
 }

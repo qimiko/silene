@@ -292,6 +292,7 @@ class JniState {
 	std::unordered_map<std::string /* class_name */, std::uint32_t /* class_id */> _class_name_mapping{};
 	std::unordered_map<std::uint32_t /* class_id */, StaticJavaClass /* class */> _class_mapping{};
 
+	static std::uint32_t emu_newStringUTF(Environment& env, std::uint32_t java_env, std::uint32_t string_ptr);
 	static std::uint32_t emu_getStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t string, std::uint32_t is_copy_ptr);
 	static void emu_releaseStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t jstring, std::uint32_t string_ptr);
 	static void emu_deleteLocalRef(Environment& env, std::uint32_t java_env, std::uint32_t local_ref);
@@ -321,7 +322,7 @@ public:
 	/**
 	 * gets the value associated with a stored reference
 	 */
-	std::string& get_ref_value(std::uint32_t vaddr);
+	std::string get_ref_value(std::uint32_t vaddr);
 
 	/**
 	 * stores a reference to a string variable, like a jstring

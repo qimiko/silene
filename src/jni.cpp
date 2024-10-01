@@ -1,6 +1,7 @@
 #include "jni.h"
 
 #include "jni/base-robtop-activity.h"
+#include "jni/cocos-activity.h"
 
 #define REGISTER_STATIC(CLASS, SIGNATURE, NAME) \
 	register_static(CLASS, SIGNATURE, &SyscallTranslator::translate_wrap<&jni_##NAME>)
@@ -55,6 +56,7 @@ void JniState::pre_init(Environment& env) {
 	this->_memory->allocate(sizeof(JNIEnv));
 
 	REGISTER_STATIC("com/customRobTop/BaseRobTopActivity", "getUserID;()Ljava/lang/String;", get_user_id);
+	REGISTER_STATIC("org/cocos2dx/lib/Cocos2dxActivity", "showMessageBox;(Ljava/lang/String;Ljava/lang/String;)V", show_message_box);
 }
 
 std::uint32_t JniState::get_vm_ptr() const {

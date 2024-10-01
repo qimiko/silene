@@ -132,3 +132,8 @@ void PagedMemory::copy(std::uint32_t vaddr, void* src, std::uint32_t length) {
 		this->_max_addr = vaddr + length;
 	}
 }
+
+void PagedMemory::set(std::uint32_t vaddr, std::uint8_t src, std::uint32_t length) {
+	std::memset(this->_backing_memory + vaddr, src, length);
+}
+

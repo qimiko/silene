@@ -38,6 +38,10 @@ void glfw_error_callback(int error, const char* description) {
 	spdlog::error("GLFW Error: {}", description);
 }
 
+// TODO: move this into a separate class
+float glfw_scale_x = 1.0f;
+float glfw_scale_y = 1.0f;
+
 void glfw_mouse_callback(GLFWwindow* window, int button, int action, int mods) {
 	if (button != GLFW_MOUSE_BUTTON_LEFT) {
 		return;
@@ -50,9 +54,11 @@ void glfw_mouse_callback(GLFWwindow* window, int button, int action, int mods) {
 		glfwGetCursorPos(window, &xpos, &ypos);
 
 		if (action == GLFW_PRESS) {
-			env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeTouchesBegin", jni_env_ptr, 0, 1, static_cast<float>(xpos * 2), static_cast<float>(ypos * 2));
+			env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeTouchesBegin",
+				jni_env_ptr, 0, 1, static_cast<float>(xpos * glfw_scale_x), static_cast<float>(ypos * glfw_scale_y));
 		} else if (action == GLFW_RELEASE) {
-			env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeTouchesEnd", jni_env_ptr, 0, 1, static_cast<float>(xpos * 2), static_cast<float>(ypos * 2));
+			env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeTouchesEnd",
+				jni_env_ptr, 0, 1, static_cast<float>(xpos * glfw_scale_x), static_cast<float>(ypos * glfw_scale_y));
 		}
 	}
 }
@@ -62,8 +68,8 @@ void glfw_mouse_move_callback(GLFWwindow* window, double xpos, double ypos) {
 		auto jni_env_ptr = env->jni().get_env_ptr();
 
 		auto ids = env->jni().create_ref(std::vector{ 1 });
-		auto xs = env->jni().create_ref(std::vector{static_cast<float>(xpos * 2)});
-		auto ys = env->jni().create_ref(std::vector{static_cast<float>(ypos * 2)});
+		auto xs = env->jni().create_ref(std::vector{static_cast<float>(xpos * glfw_scale_x)});
+		auto ys = env->jni().create_ref(std::vector{static_cast<float>(ypos * glfw_scale_y)});
 
 		env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeTouchesMove", jni_env_ptr, 0, ids, xs, ys);
 	}
@@ -273,6 +279,8 @@ int main(int argc, char** argv) {
 	auto last_update_time = glfwGetTime();
 	auto accumulated_time = 0.0f;
 
+	glfwGetWindowContentScale(window, &glfw_scale_x, &glfw_scale_y);
+
 	while (!glfwWindowShouldClose(window)) {
 		auto current_time = glfwGetTime();
     auto dt = current_time - last_time;
@@ -313,7 +321,10 @@ int main(int argc, char** argv) {
 		if (init_finished) {
 			env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeRender", jni_env_ptr, 0);
 		} else {
-			env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInit", jni_env_ptr, 0, 640 * 2, 480 * 2);
+			int width, height;
+			glfwGetFramebufferSize(window, &width, &height);
+
+			env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInit", jni_env_ptr, 0, width, height);
 			spdlog::info("init finished");
 
 			init_finished = true;

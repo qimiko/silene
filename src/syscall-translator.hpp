@@ -70,6 +70,13 @@ namespace SyscallTranslator {
 		return val;
 	}
 
+	template <typename T> requires std::same_as<T, bool>
+	inline T translate_reg(Environment& env, std::uint32_t& idx) {
+		auto val = pull_arg(env, idx);
+		idx++;
+		return static_cast<bool>(val);
+	}
+
 	/**
 	 * defines translating an emulator register to some value
 	 */
@@ -88,6 +95,12 @@ namespace SyscallTranslator {
 		push_arg(env, idx, static_cast<std::uint32_t>(data));
 		push_arg(env, idx + 1, static_cast<std::uint32_t>(data >> 32));
 		idx += 2;
+	}
+
+	template <typename T> requires std::same_as<T, bool>
+	inline void translate_call_arg(Environment& env, std::uint32_t& idx, T value) {
+		push_arg(env, idx, static_cast<std::uint32_t>(value));
+		idx++;
 	}
 
 	/**

@@ -10,20 +10,41 @@ std::uint8_t PagedMemory::read_byte(std::uint32_t vaddr) {
 }
 
 std::uint16_t PagedMemory::read_halfword(std::uint32_t vaddr) {
-	auto ret = reinterpret_cast<std::uint16_t*>(this->ptr_to_addr(vaddr));
+	auto ret = this->ptr_to_addr(vaddr);
 	// spdlog::trace("read half: {:#08x} = {:#04x}", vaddr, *ret);
-	return *ret;
+
+	if (vaddr % 2 != 0) {
+		std::uint16_t r_value;
+		std::memcpy(&r_value, ret, sizeof(std::uint16_t));
+		return r_value;
+	}
+
+	return *reinterpret_cast<std::uint16_t*>(ret);
 }
 
 std::uint32_t PagedMemory::read_word(std::uint32_t vaddr) {
-	auto ret = reinterpret_cast<std::uint32_t*>(this->ptr_to_addr(vaddr));
+	auto ret = this->ptr_to_addr(vaddr);
 	// spdlog::trace("read word: {:#08x} = {:#08x}", vaddr, *ret);
-	return *ret;
+
+	if (vaddr % 4 != 0) {
+		std::uint32_t r_value;
+		std::memcpy(&r_value, ret, sizeof(std::uint32_t));
+		return r_value;
+	}
+
+	return *reinterpret_cast<std::uint32_t*>(ret);
 }
 
 std::uint64_t PagedMemory::read_doubleword(std::uint32_t vaddr) {
-	auto ret = reinterpret_cast<std::uint64_t*>(this->ptr_to_addr(vaddr));
-	return *ret;
+	auto ret = this->ptr_to_addr(vaddr);
+
+	if (vaddr % 8 != 0) {
+		std::uint64_t r_value;
+		std::memcpy(&r_value, ret, sizeof(std::uint64_t));
+		return r_value;
+	}
+
+	return *reinterpret_cast<std::uint64_t*>(ret);
 }
 
 void PagedMemory::write_byte(std::uint32_t vaddr, std::uint8_t value) {
@@ -32,18 +53,33 @@ void PagedMemory::write_byte(std::uint32_t vaddr, std::uint8_t value) {
 }
 
 void PagedMemory::write_halfword(std::uint32_t vaddr, std::uint16_t value) {
-	auto ptr = reinterpret_cast<std::uint16_t*>(this->ptr_to_addr(vaddr));
-	*ptr = value;
+	auto ptr = this->ptr_to_addr(vaddr);
+
+	if (vaddr % 2 != 0) {
+		std::memcpy(ptr, &value, sizeof(std::uint16_t));
+	} else {
+		*reinterpret_cast<std::uint16_t*>(ptr) = value;
+	}
 }
 
 void PagedMemory::write_word(std::uint32_t vaddr, std::uint32_t value) {
-	auto ptr = reinterpret_cast<std::uint32_t*>(this->ptr_to_addr(vaddr));
-	*ptr = value;
+	auto ptr = this->ptr_to_addr(vaddr);
+
+	if (vaddr % 4 != 0) {
+		std::memcpy(ptr, &value, sizeof(std::uint32_t));
+	} else {
+		*reinterpret_cast<std::uint32_t*>(ptr) = value;
+	}
 }
 
 void PagedMemory::write_doubleword(std::uint32_t vaddr, std::uint64_t value) {
-	auto ptr = reinterpret_cast<std::uint64_t*>(this->ptr_to_addr(vaddr));
-	*ptr = value;
+	auto ptr = this->ptr_to_addr(vaddr);
+
+	if (vaddr % 8 != 0) {
+		std::memcpy(ptr, &value, sizeof(std::uint64_t));
+	} else {
+		*reinterpret_cast<std::uint64_t*>(ptr) = value;
+	}
 }
 
 void PagedMemory::allocate_stack(std::uint32_t stack_size) {
@@ -51,6 +87,10 @@ void PagedMemory::allocate_stack(std::uint32_t stack_size) {
 }
 
 void PagedMemory::allocate(std::uint32_t bytes) {
+	if (this->_max_addr > UINT32_MAX - bytes) {
+		spdlog::error("memory has overrun the max size. not good!");
+	}
+
 	if (this->_max_addr + bytes > this->_stack_min) {
 		spdlog::warn("memory is beginning to overrun the stack!");
 	}

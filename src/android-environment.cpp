@@ -108,7 +108,7 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 	spdlog::info("calling fn: {:#08x}", fn_addr);
 
 	// stack ptr, return ptr, pc
-	this->_cpu->Regs()[13] = 0xffff'ffff;
+	this->_cpu->Regs()[13] = 0xffff'fff0;
 	this->_cpu->Regs()[14] = 0x11;
 
 	// strip the thumb bit

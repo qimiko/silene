@@ -58,6 +58,13 @@ public:
 	}
 
 	u32 MemoryRead32(u32 vaddr) override {
+		if (vaddr == 0x0) {
+			spdlog::warn("careful... null read");
+			if (this->_debug_server) {
+				this->_debug_server->report_halt(GdbServer::HaltReason::SegmentationFault);
+			}
+		}
+
 		return _memory->read_word(vaddr);
 	}
 

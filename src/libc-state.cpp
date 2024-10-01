@@ -55,6 +55,84 @@ void LibcState::register_destructor(StaticDestructor destructor) {
 	this->_destructors.push_back(destructor);
 }
 
+std::uint32_t LibcState::open_file(const std::string& filename, const char* mode) {
+	auto it = _exposed_files.find(filename);
+	if (it == _exposed_files.end()) {
+		spdlog::warn("tried to open unknown file: {}", filename);
+		return 0;
+	}
+
+	auto& exposed_name = it->second;
+
+	auto file_ptr = std::fopen(exposed_name.c_str(), mode);
+	if (!file_ptr) {
+		return 0;
+	}
+
+	auto addr = this->allocate_memory(4);
+
+	// write itself for safekeeping
+	this->_memory->write_word(addr, addr);
+
+	_open_files[addr] = file_ptr;
+	return addr;
+}
+
+std::int32_t LibcState::close_file(std::uint32_t file_ref) {
+	auto it = _open_files.find(file_ref);
+	if (it == _open_files.end()) {
+		spdlog::warn("tried to close unknown file {:#x}", file_ref);
+		return -1;
+	}
+
+	auto file_ptr = it->second;
+
+	auto r = fclose(file_ptr);
+
+	this->free_memory(file_ref);
+	_open_files.erase(it);
+
+	return r;
+}
+
+std::int32_t LibcState::seek_file(std::uint32_t file_ref, std::int32_t offset, std::int32_t origin) {
+	auto it = _open_files.find(file_ref);
+	if (it == _open_files.end()) {
+		spdlog::warn("tried to seek unknown file {:#x}", file_ref);
+		return -1;
+	}
+
+	auto file_ptr = it->second;
+	return std::fseek(file_ptr, offset, origin);
+}
+
+std::int32_t LibcState::read_file(void* buf, std::uint32_t size, std::uint32_t count, std::uint32_t file_ref) {
+	auto it = _open_files.find(file_ref);
+	if (it == _open_files.end()) {
+		spdlog::warn("tried to read unknown file {:#x}", file_ref);
+		return 0;
+	}
+
+	auto file_ptr = it->second;
+
+	return static_cast<std::uint32_t>(std::fread(buf, size, count, file_ptr));
+}
+
+std::int32_t LibcState::tell_file(std::uint32_t file_ref) {
+	auto it = _open_files.find(file_ref);
+	if (it == _open_files.end()) {
+		spdlog::warn("tried to tell unknown file {:#x}", file_ref);
+		return -1;
+	}
+	auto file_ptr = it->second;
+
+	return static_cast<std::uint32_t>(std::ftell(file_ptr));
+}
+
+void LibcState::expose_file(std::string emu_name, std::string real_name) {
+	_exposed_files[emu_name] = real_name;
+}
+
 void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, sin);
 	REGISTER_FN(env, sinf);

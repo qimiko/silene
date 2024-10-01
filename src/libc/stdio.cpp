@@ -52,15 +52,32 @@ std::string perform_printf(Environment& env, const std::string& format_str, T& v
 
 std::uint32_t emu_fopen(Environment& env, std::uint32_t filename_ptr, std::uint32_t mode_ptr) {
 	auto filename = env.memory_manager()->read_bytes<char>(filename_ptr);
-	spdlog::info("TODO: fopen({})", filename);
+	auto mode = env.memory_manager()->read_bytes<char>(mode_ptr);
 
-	return 0;
+	return env.libc().open_file(filename, mode);
+}
+
+std::int32_t emu_fclose(Environment& env, std::uint32_t file) {
+	return env.libc().close_file(file);
 }
 
 std::uint32_t emu_fwrite(Environment& env, std::uint32_t buffer_ptr, std::uint32_t size, std::uint32_t count, std::uint32_t stream_ptr) {
 	spdlog::info("TODO: fwrite");
 
 	return 0;
+}
+
+std::int32_t emu_fseek(Environment& env, std::uint32_t file_ref, std::int32_t offset, std::int32_t origin) {
+	return env.libc().seek_file(file_ref, offset, origin);
+}
+
+std::int32_t emu_ftell(Environment& env, std::uint32_t file) {
+	return env.libc().tell_file(file);
+}
+
+std::int32_t emu_fread(Environment& env, std::uint32_t buf_ptr, std::uint32_t size, std::uint32_t count, std::uint32_t file_ref) {
+	auto buf = env.memory_manager()->read_bytes<void>(buf_ptr);
+	return env.libc().read_file(buf, size, count, file_ref);
 }
 
 std::int32_t emu_fputs(Environment& env, std::uint32_t str_ptr, std::uint32_t stream_ptr) {

@@ -18,6 +18,11 @@
 		REGISTER_STUB(ENV, NAME), \
 		STR(NAME) \
 	)
+#define REGISTER_SYSCALL(ENV, NAME, CALL) \
+	ENV.syscall_handler().register_kernel_fn( \
+		CALL, \
+		&SyscallTranslator::translate_wrap<&kernel_##NAME> \
+	)
 
 namespace SyscallTranslator {
 	namespace {

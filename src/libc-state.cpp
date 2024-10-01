@@ -12,6 +12,11 @@
 #include "libc/wctype.h"
 #include "libc/log.h"
 #include "libc/setjmp.h"
+#include "libc/time.h"
+
+#include "kernel/kernel.h"
+
+#include "gl/gl-wrap.h"
 
 std::uint32_t LibcState::allocate_memory(std::uint32_t size, bool zero_mem) {
 	// TODO: this implementation is terrible.
@@ -133,9 +138,23 @@ void LibcState::expose_file(std::string emu_name, std::string real_name) {
 	_exposed_files[emu_name] = real_name;
 }
 
+std::uint32_t LibcState::get_strtok_buffer() const {
+	return this->_strtok_buffer;
+}
+
+void LibcState::set_strtok_buffer(std::uint32_t x) {
+	this->_strtok_buffer = x;
+}
+
 void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, sin);
 	REGISTER_FN(env, sinf);
+	REGISTER_FN(env, cos);
+	REGISTER_FN(env, cosf);
+	REGISTER_FN(env, sqrtf);
+	REGISTER_FN(env, ceilf);
+	REGISTER_FN(env, ceil);
+	REGISTER_FN(env, roundf);
 	REGISTER_FN(env, __cxa_atexit);
 	REGISTER_FN(env, __cxa_finalize);
 	REGISTER_FN(env, __gnu_Unwind_Find_exidx);
@@ -144,6 +163,7 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, btowc);
 	REGISTER_FN(env, wctype);
 	REGISTER_FN(env, wctob);
+	REGISTER_FN(env, atoi);
 	REGISTER_FN(env, pthread_key_create);
 	REGISTER_FN(env, pthread_once);
 	REGISTER_FN(env, pthread_mutex_lock);
@@ -154,15 +174,19 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, malloc);
 	REGISTER_FN(env, free);
 	REGISTER_FN(env, realloc);
+	REGISTER_FN(env, calloc);
 	REGISTER_FN(env, abort);
 	REGISTER_FN(env, strlen);
 	REGISTER_FN(env, memset);
 	REGISTER_FN(env, setlocale);
 	REGISTER_FN(env, fopen);
+	REGISTER_FN(env, fclose);
+	REGISTER_FN(env, fseek);
+	REGISTER_FN(env, ftell);
+	REGISTER_FN(env, fread);
 	REGISTER_FN(env, fwrite);
 	REGISTER_FN(env, fputs);
 	REGISTER_FN(env, getsockopt);
-	REGISTER_FN(env, calloc);
 	REGISTER_FN(env, __stack_chk_fail);
 	REGISTER_FN(env, memcmp);
 	REGISTER_FN(env, __android_log_print);
@@ -171,10 +195,22 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, strncpy);
 	REGISTER_FN(env, vsprintf);
 	REGISTER_FN(env, vsnprintf);
+	REGISTER_FN(env, sscanf);
 	REGISTER_FN(env, setjmp);
 	REGISTER_FN(env, longjmp);
 	REGISTER_FN(env, fprintf);
 	REGISTER_FN(env, fputc);
 	REGISTER_FN(env, strtol);
 	REGISTER_FN(env, strtod);
+	REGISTER_FN(env, strstr);
+	REGISTER_FN(env, strtok);
+	REGISTER_FN(env, gettimeofday);
+	REGISTER_FN(env, time);
+	REGISTER_FN(env, getenv);
+	REGISTER_FN(env, lrand48);
+	REGISTER_FN(env, arc4random);
+	REGISTER_FN(env, ftime);
+	REGISTER_FN(env, srand48);
+
+	REGISTER_SYSCALL(env, openat, 0x142);
 }

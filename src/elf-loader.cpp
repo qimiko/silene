@@ -52,12 +52,14 @@ void Elf::Loader::relocate(const Elf::File& elf, LoaderState state, std::uint32_
 			auto name_str = this->_memory->read_bytes<char>(string_table_addr + name_offset);
 
 			auto symbol_name = std::string(name_str);
-			spdlog::trace("resolve symbol {}", symbol_name);
+			spdlog::debug("resolve symbol {}", symbol_name);
 
 			auto addr = this->resolve_sym_addr(symbol_name);
 			if (addr) {
 				// fn returns 0 on failure, don't accept that
 				sym_addr = addr;
+			} else {
+				spdlog::warn("missing symbol {}", symbol_name, symbol->info);
 			}
 
 			// state.dynamic.symbol_table_offset;

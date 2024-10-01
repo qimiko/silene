@@ -91,4 +91,52 @@ std::uint32_t emu_memchr(Environment& env, std::uint32_t ptr, std::int32_t ch, s
 	return ptr + static_cast<std::uint32_t>(offset);
 }
 
+std::uint32_t emu_strstr(Environment& env, std::uint32_t str_ptr, std::uint32_t substr_ptr) {
+	auto str = env.memory_manager()->read_bytes<char>(str_ptr);
+	auto substr = env.memory_manager()->read_bytes<char>(substr_ptr);
+
+	auto r = reinterpret_cast<char*>(std::strstr(str, substr));
+
+	if (r == 0) {
+		return 0;
+	}
+
+	auto offset = reinterpret_cast<std::ptrdiff_t>(r - str);
+
+	return str_ptr + static_cast<std::uint32_t>(offset);
+}
+
+std::uint32_t emu_strtok(Environment& env, std::uint32_t str_ptr, std::uint32_t delim_ptr) {
+	auto delim = env.memory_manager()->read_bytes<char>(delim_ptr);
+
+	if (str_ptr == 0) {
+		str_ptr = env.libc().get_strtok_buffer();
+	}
+
+	auto str = env.memory_manager()->read_bytes<char>(str_ptr);
+
+	auto substr_offs = std::strspn(str, delim);
+
+	str_ptr += substr_offs;
+	str += substr_offs;
+
+	if (*str == '\0') {
+		env.libc().set_strtok_buffer(str_ptr);
+		return 0;
+	}
+
+	auto begin_token = str_ptr;
+
+	auto token_len = std::strcspn(str, delim);
+	str_ptr += token_len;
+	str += token_len;
+
+	if (*str != '\0') {
+		*str++ = '\0';
+	}
+
+	env.libc().set_strtok_buffer(str_ptr);
+	return begin_token;
+}
+
 #endif

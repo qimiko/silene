@@ -4,6 +4,7 @@
 #define _LIBC_STATE_H
 
 #include <cstdint>
+#include <cstdio>
 
 #include <spdlog/spdlog.h>
 
@@ -24,6 +25,8 @@ class LibcState {
 	std::unordered_map<std::string, std::string> _exposed_files{};
 	std::unordered_map<std::uint32_t, std::FILE*> _open_files{};
 
+	std::uint32_t _strtok_buffer{0u};
+
 public:
 
 	std::uint32_t allocate_memory(std::uint32_t size, bool zero_mem = false);
@@ -33,6 +36,9 @@ public:
 	void register_destructor(StaticDestructor destructor);
 
 	void pre_init(Environment& environment);
+
+	std::uint32_t get_strtok_buffer() const;
+	void set_strtok_buffer(std::uint32_t);
 
 	std::uint32_t open_file(const std::string& filename, const char* mode);
 	std::int32_t close_file(std::uint32_t file_ref);

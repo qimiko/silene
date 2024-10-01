@@ -42,7 +42,7 @@ std::int32_t emu_strtol(Environment& env, std::uint32_t begin_ptr, std::uint32_t
 	return x;
 }
 
-float emu_strtod(Environment& env, std::uint32_t begin_ptr, std::uint32_t end_ptr) {
+double emu_strtod(Environment& env, std::uint32_t begin_ptr, std::uint32_t end_ptr) {
 	auto begin = env.memory_manager()->read_bytes<char>(begin_ptr);
 
 	char* end;
@@ -56,6 +56,27 @@ float emu_strtod(Environment& env, std::uint32_t begin_ptr, std::uint32_t end_pt
 	}
 
 	return x;
+}
+
+int emu_atoi(Environment& env, std::uint32_t str_ptr) {
+	auto str = env.memory_manager()->read_bytes<char>(str_ptr);
+	return std::atoi(str);
+}
+
+std::uint32_t emu_getenv(Environment& env, std::uint32_t name_ptr) {
+	return 0;
+}
+
+std::int32_t emu_lrand48(Environment& env) {
+	return static_cast<std::int32_t>(lrand48());
+}
+
+std::uint32_t emu_arc4random(Environment& env) {
+	return arc4random();
+}
+
+void emu_srand48(Environment& env, std::int32_t seed) {
+	srand48(seed);
 }
 
 #endif

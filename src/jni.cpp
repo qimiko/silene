@@ -22,6 +22,9 @@ void JniState::pre_init(Environment& env) {
 	jni_env.ptr_callStaticVoidMethodV = REGISTER_STUB(env, callStaticVoidMethodV);
 	jni_env.ptr_callStaticObjectMethodV = REGISTER_STUB(env, callStaticObjectMethodV);
 	jni_env.ptr_getStaticMethodID = REGISTER_STUB(env, getStaticMethodID);
+	jni_env.ptr_getArrayLength = REGISTER_STUB(env, getArrayLength);
+	jni_env.ptr_getIntArrayRegion = REGISTER_STUB(env, getIntArrayRegion);
+	jni_env.ptr_getFloatArrayRegion = REGISTER_STUB(env, getFloatArrayRegion);
 
 	// write after registering symbols so memory is ordered more cleanly
 
@@ -74,7 +77,8 @@ std::uint32_t JniState::emu_newStringUTF(Environment& env, std::uint32_t java_en
 
 std::uint32_t JniState::emu_getStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t string, std::uint32_t is_copy_ptr) {
 	try {
-		auto ref = env.jni().get_ref_value(string);
+		auto ref_v = env.jni().get_ref_value(string);
+		auto ref = std::get<std::string>(ref_v);
 
 		// add a null byte
 		auto ptr = env.libc().allocate_memory(ref.length() + 1, true);
@@ -155,22 +159,60 @@ void JniState::remove_ref(std::uint32_t vaddr) {
 	this->_object_refs.erase(vaddr);
 }
 
-std::string JniState::get_ref_value(std::uint32_t vaddr) {
+JniState::RefType& JniState::get_ref_value(std::uint32_t vaddr) {
 	return this->_object_refs.at(vaddr);
 }
 
 std::uint32_t JniState::create_string_ref(const std::string_view& str) {
+	return this->create_ref(std::string(str));
+}
+
+std::uint32_t JniState::create_ref(JniState::RefType x) {
 	auto addr = this->_memory->get_next_word_addr();
 	this->_memory->allocate(4);
 
 	// write itself for safekeeping
 	this->_memory->write_word(addr, 0xcbfbfbdb);
 
-	this->_object_refs[addr] = std::string(str);
+	this->_object_refs[addr] = x;
 
-	spdlog::trace("create string ref: {:#08x}", addr);
+	spdlog::trace("create ref: {:#08x}", addr);
 
 	return addr;
+}
+
+std::uint32_t JniState::emu_getArrayLength(Environment& env, std::uint32_t java_env, std::uint32_t jarray) {
+	auto& ref_v = env.jni().get_ref_value(jarray);
+	if (std::holds_alternative<std::vector<int>>(ref_v)) {
+		auto& ref = std::get<std::vector<int>>(ref_v);
+		return static_cast<std::uint32_t>(ref.size());
+	}
+
+	if (std::holds_alternative<std::vector<float>>(ref_v)) {
+		auto& ref = std::get<std::vector<float>>(ref_v);
+		return static_cast<std::uint32_t>(ref.size());
+	}
+
+	spdlog::warn("getArrayLength called on non array ref");
+	return 0;
+}
+
+void JniState::emu_getIntArrayRegion(Environment& env, std::uint32_t java_env, std::uint32_t jarray, std::uint32_t start, std::uint32_t len, std::uint32_t buf_ptr) {
+	auto& ref_v = env.jni().get_ref_value(jarray);
+	auto& ref = std::get<std::vector<int>>(ref_v);
+
+	auto buf = env.memory_manager()->read_bytes<std::int32_t>(buf_ptr);
+
+	std::copy(ref.begin() + start, ref.begin() + start + len, buf);
+}
+
+void JniState::emu_getFloatArrayRegion(Environment& env, std::uint32_t java_env, std::uint32_t jarray, std::uint32_t start, std::uint32_t len, std::uint32_t buf_ptr) {
+	auto& ref_v = env.jni().get_ref_value(jarray);
+	auto& ref = std::get<std::vector<float>>(ref_v);
+
+	auto buf = env.memory_manager()->read_bytes<float>(buf_ptr);
+
+	std::copy(ref.begin() + start, ref.begin() + start + len, buf);
 }
 
 void JniState::emu_releaseStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t jstring, std::uint32_t string_ptr) {

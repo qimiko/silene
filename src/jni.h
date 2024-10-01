@@ -285,7 +285,9 @@ class JniState {
 	std::uint32_t _vm_ptr{0};
 	std::uint32_t _env_ptr{0};
 
-	std::unordered_map<std::uint32_t /* vaddr */, std::string /* stored */> _object_refs{};
+	using RefType = std::variant<std::string, std::vector<int>, std::vector<float>>;
+
+	std::unordered_map<std::uint32_t /* vaddr */, RefType /* stored */> _object_refs{};
 
 	// use a non-zero value to avoid tricking it
 	std::uint32_t _class_count{1};
@@ -296,6 +298,10 @@ class JniState {
 	static std::uint32_t emu_getStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t string, std::uint32_t is_copy_ptr);
 	static void emu_releaseStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t jstring, std::uint32_t string_ptr);
 	static void emu_deleteLocalRef(Environment& env, std::uint32_t java_env, std::uint32_t local_ref);
+
+	static std::uint32_t emu_getArrayLength(Environment& env, std::uint32_t java_env, std::uint32_t jarray);
+	static void emu_getIntArrayRegion(Environment& env, std::uint32_t java_env, std::uint32_t jarray, std::uint32_t start, std::uint32_t len, std::uint32_t buf_ptr);
+	static void emu_getFloatArrayRegion(Environment& env, std::uint32_t java_env, std::uint32_t jarray, std::uint32_t start, std::uint32_t len, std::uint32_t buf_ptr);
 
 	static std::uint32_t emu_getEnv(Environment& env, std::uint32_t java_env, std::uint32_t out_ptr, std::uint32_t version);
 	static std::uint32_t emu_attachCurrentThread(Environment& env, std::uint32_t java_env, std::uint32_t p_env_ptr, std::uint32_t attach_args_ptr);
@@ -322,12 +328,17 @@ public:
 	/**
 	 * gets the value associated with a stored reference
 	 */
-	std::string get_ref_value(std::uint32_t vaddr);
+	RefType& get_ref_value(std::uint32_t vaddr);
 
 	/**
 	 * stores a reference to a string variable, like a jstring
 	 */
 	std::uint32_t create_string_ref(const std::string_view& str);
+
+	/**
+	 * Stores a reference to a generic variable
+	 */
+	std::uint32_t create_ref(RefType t);
 
 	/**
 	 * registers a static jni method

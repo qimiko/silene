@@ -9,8 +9,8 @@ void jni_show_message_box(Environment& env, std::uint32_t java_env, std::uint32_
 	auto title_obj = args.next<std::uint32_t>();
 	auto message_obj = args.next<std::uint32_t>();
 
-	auto title = env.jni().get_ref_value(title_obj);
-	auto message = env.jni().get_ref_value(message_obj);
+	auto title = std::get<std::string>(env.jni().get_ref_value(title_obj));
+	auto message = std::get<std::string>(env.jni().get_ref_value(message_obj));
 
 	spdlog::warn("Application called showMessageBox! [{}] {}", title, message);
 }

@@ -14,8 +14,8 @@ option(USE_ANGLE "Uses ANGLE instead of the desktop's OpenGL" OFF)
 
 include(cmake/CPM.cmake)
 
-CPMAddPackage("gh:merryhime/dynarmic#6.5.0")
-CPMAddPackage("gh:gabime/spdlog@1.12.0")
+CPMAddPackage("gh:qimiko/dynarmic#6.7.0")
+CPMAddPackage("gh:gabime/spdlog@1.14.1")
 CPMAddPackage("gh:CLIUtils/CLI11@2.4.2")
 
 CPMAddPackage(

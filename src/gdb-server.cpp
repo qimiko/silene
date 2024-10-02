@@ -9,8 +9,9 @@
 #include <iomanip>
 #include <bit>
 #include <span>
-
 #include <exception>
+
+#include <arpa/inet.h>
 
 template <typename T>
 T parse_hex(const char* msg, std::uint32_t begin, std::uint32_t end) {

@@ -97,6 +97,23 @@ File::File(const std::string& path) {
 
 	this->_mem = reinterpret_cast<std::uint8_t*>(elf_mem);
 	this->_size = elf_size;
+	this->_mmapped_data = true;
+
+	if (!this->verify_elf()) {
+			throw std::runtime_error("failure to verify elf magic");
+	}
+}
+
+File::File(std::vector<std::uint8_t>&& elf_mem) {
+	// take ownership of the vector to prevent lifetime issues
+	this->_in_mem_data = std::move(elf_mem);
+	this->_mem = _in_mem_data.data();
+	this->_size = _in_mem_data.size();
+	this->_mmapped_data = false;
+
+	if (this->_mem == nullptr) {
+		throw std::runtime_error("elf mem is nullptr");
+	}
 
 	if (!this->verify_elf()) {
 			throw std::runtime_error("failure to verify elf magic");
@@ -104,7 +121,10 @@ File::File(const std::string& path) {
 }
 
 File::~File() {
-	munmap(this->_mem, this->_size);
+	if (this->_mmapped_data) {
+		munmap(this->_mem, this->_size);
+	}
+
 	this->_mem = nullptr;
 	this->_size = 0;
 }

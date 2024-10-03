@@ -228,6 +228,9 @@ private:
 	std::uint8_t* _mem{nullptr};
   std::int64_t _size{0};
 
+	std::vector<std::uint8_t> _in_mem_data;
+	bool _mmapped_data{false};
+
 	/**
 	 * validates that the magic field of an elf is correct
 	 */
@@ -249,6 +252,7 @@ public:
 	 */
 	std::pair<std::size_t /* beginning */, std::size_t /* length */> load_size() const;
 
+	File(std::vector<std::uint8_t>&& elf_mem);
 	File(const std::string& path);
 	~File();
 };

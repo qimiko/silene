@@ -20,6 +20,7 @@
 #include "paged-memory.hpp"
 #include "elf.h"
 #include "elf-loader.h"
+#include "zip-file.h"
 
 #include "hook/fileutils.h"
 
@@ -81,8 +82,8 @@ int main(int argc, char** argv) {
 	CLI::App app;
 	argv = app.ensure_utf8(argv);
 
-	std::string filename;
-	app.add_option("binary", filename, "path to so file to load")
+	std::string app_apk;
+	app.add_option("apk", app_apk, "path to apk file to use for libraries")
 		->check(CLI::ExistingFile)
 		->required();
 
@@ -92,16 +93,8 @@ int main(int argc, char** argv) {
 	bool enable_debugging = false;
 	app.add_flag("-d,--debug", enable_debugging, "enables debugging through gdb on port 5039");
 
-	/*
-	std::string resources_dir = "./assets/";
-	app.add_option("--assets", resources_dir, "determines where cocos resources should be redirected to")
-		->capture_default_str()
-		->check(CLI::ExistingDirectory);
-	*/
-
-	std::string app_apk = "./game.apk";
-	app.add_option("--app", app_apk, "Determines the APK file to use for resources")
-		->capture_default_str()
+	std::string app_resources{};
+	app.add_option("--resources", app_resources, "Determines the APK file to use for resources. If left blank, the main APK file is used")
 		->check(CLI::ExistingFile);
 
 	std::string support_dir = "./support/";
@@ -111,18 +104,31 @@ int main(int argc, char** argv) {
 
 	CLI11_PARSE(app, argc, argv);
 
-	/*
-	if (!std::filesystem::is_directory(resources_dir)) {
-		std::cout << "resources directory does not exist: " << resources_dir << std::endl;
-		return 0;
+	if (app_resources.empty()) {
+		app_resources = app_apk;
 	}
-	*/
 
 	if (verbose) {
 		spdlog::set_level(spdlog::level::debug);
 	}
 
-	auto elf = Elf::File(filename);
+	ZipFile apk_file{app_apk};
+
+	std::string lib_path;
+	if (apk_file.has_file("lib/armeabi-v7a/libgame.so")) {
+		lib_path = "lib/armeabi-v7a/libgame.so";
+	} else if (apk_file.has_file("lib/armeabi-v7a/libcocos2dcpp.so")) {
+		lib_path = "lib/armeabi-v7a/libcocos2dcpp.so";
+	} else if (apk_file.has_file("lib/armeabi/libgame.so")) {
+		lib_path = "lib/armeabi/libgame.so"; // pre 1.6 only has armv5
+	} else {
+		spdlog::error("apk is missing library for a supported architecture");
+		return 1;
+	}
+
+	auto main_lib = apk_file.read_file_bytes(lib_path);
+
+	auto elf = Elf::File(std::move(main_lib));
 
 	auto header = elf.header();
 
@@ -263,7 +269,7 @@ int main(int argc, char** argv) {
 	glfwSetMouseButtonCallback(window, &glfw_mouse_callback);
 	glfwSetCursorPosCallback(window, &glfw_mouse_move_callback);
 
-	env.libc().expose_file("/application_resources.apk", app_apk);
+	env.libc().expose_file("/application_resources.apk", app_resources);
 
 	// first arg should be a jstring to the path
 	auto path_string = env.jni().create_string_ref("/application_resources.apk");

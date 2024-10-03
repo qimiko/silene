@@ -36,12 +36,14 @@ Unfortunately, [Boost](https://www.boost.org/) must be installed on your system 
 
 ### Running
 
-This is currently a command line program. Only one argument is required, that being the path to the .so file you want to run.
+This is currently a command line program. Only one argument is required, that being the path to the APK file you want to run.
 
-`./silene test/minimal-library/build/libtest-library.so`
+`./silene test/gd19.apk`
 
 You can enable verbose logging with the `--verbose` flag.  
 If you like to use GDB, you can also enable debugging with the `--debug` flag.
+
+If you want to use a newer version of Geometry Dash that splits the APK, the `--resources` flag will redirect resource loading accordingly.
 
 ## License
 

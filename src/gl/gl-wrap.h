@@ -311,10 +311,12 @@ void emu_glVertexAttribPointer(Environment& env, std::uint32_t index, std::int32
 
 void emu_glEnableVertexAttribArray(Environment& env, std::uint32_t index) {
 	glEnableVertexAttribArray(index);
+	spdlog::trace("glEnableVertexAttribArray(index: {}) -> {}", index, glGetError());
 }
 
 void emu_glDisableVertexAttribArray(Environment& env, std::uint32_t index) {
 	glDisableVertexAttribArray(index);
+	spdlog::trace("glDisableVertexAttribArray(index: {}) -> {}", index, glGetError());
 }
 
 void emu_glLineWidth(Environment& env, float width) {

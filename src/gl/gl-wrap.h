@@ -9,7 +9,7 @@
 #include <GLES2/gl2.h>
 #include <EGL/egl.h>
 #else
-#include <OpenGL/gl.h>
+#include <glad/glad.h>
 #endif
 
 std::uint32_t emu_glGetString(Environment& env, std::uint32_t name) {
@@ -236,7 +236,8 @@ void emu_glBlendFunc(Environment& env, std::uint32_t sfactor, std::uint32_t dfac
 }
 
 void emu_glClearDepthf(Environment& env, float depth) {
-#if SILENE_USE_EGL
+	// this function is unavailable on desktop opengl
+#ifdef SILENE_USE_EGL
 	glClearDepthf(depth);
 #else
 	glClearDepth(depth);

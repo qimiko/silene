@@ -26,6 +26,8 @@
 #ifdef SILENE_USE_EGL
 #include <GLES2/gl2.h>
 #include <EGL/egl.h>
+#else
+#include <glad/glad.h>
 #endif
 
 #include <GLFW/glfw3.h>
@@ -147,17 +149,17 @@ int main(int argc, char** argv) {
 	if (!glfwInit())
 		return 1;
 
-	#ifdef SILENE_USE_EGL
+#ifdef SILENE_USE_EGL
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 	glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_EGL_CONTEXT_API);
-	#else
+#else
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-  // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	#endif
+#endif
 
 	glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GL_TRUE);
 
@@ -174,6 +176,13 @@ int main(int argc, char** argv) {
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 
+#ifndef SILENE_USE_EGL
+	if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+		spdlog::error("Failed to initialize GLAD");
+		return 1;
+	}
+#endif
+
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -186,7 +195,7 @@ int main(int argc, char** argv) {
 	#ifdef SILENE_USE_EGL
 	ImGui_ImplOpenGL3_Init("#version 300 es");
 	#else
-	ImGui_ImplOpenGL3_Init("#version 320");
+	ImGui_ImplOpenGL3_Init("#version 150");
 	#endif
 
 	AndroidEnvironment env{};

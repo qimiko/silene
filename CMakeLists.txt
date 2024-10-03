@@ -5,7 +5,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(silene VERSION 0.0.1)
 
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+if(NOT DEFINED USE_ANGLE AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
 	# use angle by default on macos
 	set(USE_ANGLE ON)
 endif()
@@ -50,6 +50,10 @@ set(SRC_FILES
 	${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
 )
 
+if (NOT USE_ANGLE)
+	set(SRC_FILES ${SRC_FILES} third_party/src/glad/glad.c)
+endif()
+
 add_executable(silene ${SRC_FILES})
 
 target_compile_options(silene PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
@@ -60,6 +64,7 @@ target_link_libraries(silene CLI11::CLI11)
 
 target_include_directories(silene PRIVATE "${imgui_SOURCE_DIR}")
 target_include_directories(silene PRIVATE "${CMAKE_SOURCE_DIR}/third_party/include/glfw")
+target_include_directories(silene PRIVATE "${CMAKE_SOURCE_DIR}/third_party/include/glad")
 
 if (USE_ANGLE)
 	target_compile_definitions(silene PRIVATE -DIMGUI_IMPL_OPENGL_ES2)

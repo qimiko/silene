@@ -13,11 +13,22 @@
 	ENV.syscall_handler().create_stub_fn( \
 		&SyscallTranslator::translate_wrap<&emu_##NAME> \
 	)
+#define REGISTER_STUB_RN(ENV, NAME) \
+	ENV.syscall_handler().create_stub_fn( \
+		&SyscallTranslator::translate_wrap<&NAME> \
+	)
+
 #define REGISTER_FN(ENV, NAME) \
 	ENV.program_loader().add_stub_symbol( \
 		REGISTER_STUB(ENV, NAME), \
 		STR(NAME) \
 	)
+#define REGISTER_FN_RN(ENV, NAME, SYMBOL) \
+	ENV.program_loader().add_stub_symbol( \
+		REGISTER_STUB_RN(ENV, NAME), \
+		SYMBOL \
+	)
+
 #define REGISTER_SYSCALL(ENV, NAME, CALL) \
 	ENV.syscall_handler().register_kernel_fn( \
 		CALL, \

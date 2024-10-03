@@ -32,6 +32,9 @@ std::uint32_t emu_glGetString(Environment& env, std::uint32_t name) {
 
 void emu_glGetIntegerv(Environment& env, std::uint32_t name, std::uint32_t data_ptr) {
 	auto data = env.memory_manager()->read_bytes<int>(data_ptr);
+	if (data_ptr == 0) {
+		data = nullptr;
+	}
 
 	glGetIntegerv(name, data);
 	spdlog::trace("glGetIntegerv(name: {}, data: {:#x}) -> {}", name, data_ptr, glGetError());
@@ -39,6 +42,9 @@ void emu_glGetIntegerv(Environment& env, std::uint32_t name, std::uint32_t data_
 
 void emu_glGetFloatv(Environment& env, std::uint32_t name, std::uint32_t data_ptr) {
 	auto data = env.memory_manager()->read_bytes<float>(data_ptr);
+	if (data_ptr == 0) {
+		data = nullptr;
+	}
 
 	glGetFloatv(name, data);
 	spdlog::trace("glGetFloatv(name: {}, data: {:#x}) -> {}", name, data_ptr, glGetError());
@@ -103,6 +109,9 @@ void emu_glCompileShader(Environment& env, std::uint32_t shader) {
 
 void emu_glGetShaderiv(Environment& env, std::uint32_t shader, std::uint32_t name, std::uint32_t data_ptr) {
 	auto data = env.memory_manager()->read_bytes<int>(data_ptr);
+	if (data_ptr == 0) {
+		data = nullptr;
+	}
 
 	glGetShaderiv(shader, name, data);
 
@@ -123,6 +132,10 @@ void emu_glAttachShader(Environment& env, std::uint32_t program, std::uint32_t s
 
 void emu_glBindAttribLocation(Environment& env, std::uint32_t program, std::uint32_t index, std::uint32_t name_ptr) {
 	auto name = env.memory_manager()->read_bytes<char>(name_ptr);
+	if (name_ptr == 0) {
+		name = nullptr;
+	}
+
 	glBindAttribLocation(program, index, name);
 
 	spdlog::trace("glBindAttribLocation(program: {}, index: {}, name: {}) -> {}", program, index, name, glGetError());
@@ -219,13 +232,30 @@ void emu_glActiveTexture(Environment& env, std::uint32_t texture) {
 
 void emu_glGenTextures(Environment& env, std::uint32_t n, std::uint32_t textures_ptr) {
 	auto textures = env.memory_manager()->read_bytes<std::uint32_t>(textures_ptr);
+	if (textures_ptr == 0) {
+		textures = nullptr;
+	}
+
 	glGenTextures(n, textures);
 
 	spdlog::trace("glGenTextures(n: {}, textures: {:#x}) -> {}", n, textures_ptr, glGetError());
 }
 
+void emu_glDeleteTextures(Environment& env, std::uint32_t n, std::uint32_t textures_ptr) {
+	auto textures = env.memory_manager()->read_bytes<std::uint32_t>(textures_ptr);
+	if (textures_ptr == 0) {
+		textures = nullptr;
+	}
+
+	glDeleteTextures(n, textures);
+}
+
 void emu_glGenBuffers(Environment& env, std::uint32_t n, std::uint32_t buffers_ptr) {
 	auto buffers = env.memory_manager()->read_bytes<std::uint32_t>(buffers_ptr);
+	if (buffers_ptr == 0) {
+		buffers = nullptr;
+	}
+
 	glGenBuffers(n, buffers);
 
 	spdlog::trace("glGenBuffers(n: {}, buffers: {:#x}) -> {}", n, buffers_ptr, glGetError());
@@ -293,6 +323,10 @@ void emu_glDrawElements(Environment& env, std::uint32_t mode, std::uint32_t coun
 
 void emu_glBufferSubData(Environment& env, std::uint32_t target, std::uint32_t offset, std::int32_t size, std::uint32_t data_ptr) {
 	auto data = env.memory_manager()->read_bytes<void>(data_ptr);
+	if (data_ptr == 0) {
+		data = nullptr;
+	}
+
 	glBufferSubData(target, offset, size, data);
 
 	spdlog::trace("glBufferSubData({}, {}, {}, {:#x}) -> {}", target, offset, size, data_ptr, glGetError());

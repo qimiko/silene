@@ -13,6 +13,7 @@
 #include "libc/log.h"
 #include "libc/setjmp.h"
 #include "libc/time.h"
+#include "libc/ctype.h"
 
 #include "kernel/kernel.h"
 
@@ -151,6 +152,7 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, sinf);
 	REGISTER_FN(env, cos);
 	REGISTER_FN(env, cosf);
+	REGISTER_FN(env, sqrt);
 	REGISTER_FN(env, sqrtf);
 	REGISTER_FN(env, ceilf);
 	REGISTER_FN(env, ceil);
@@ -180,6 +182,7 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, pthread_once);
 	REGISTER_FN(env, pthread_mutex_lock);
 	REGISTER_FN(env, pthread_mutex_unlock);
+	REGISTER_FN(env, pthread_cond_broadcast);
 	REGISTER_FN(env, memcpy);
 	REGISTER_FN(env, memmove);
 	REGISTER_FN(env, memchr);
@@ -223,6 +226,7 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, arc4random);
 	REGISTER_FN(env, ftime);
 	REGISTER_FN(env, srand48);
+	REGISTER_FN(env, tolower);
 
 	REGISTER_SYSCALL(env, openat, 0x142);
 
@@ -253,6 +257,7 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN_RN(env, emu_glBufferData, "glBufferData");
 	REGISTER_FN_RN(env, emu_glTexParameteri, "glTexParameteri");
 	REGISTER_FN_RN(env, emu_glGenTextures, "glGenTextures");
+	REGISTER_FN_RN(env, emu_glDeleteTextures, "glDeleteTextures");
 	REGISTER_FN_RN(env, emu_glGenBuffers, "glGenBuffers");
 	REGISTER_FN_RN(env, emu_glDeleteBuffers, "glDeleteBuffers");
 	REGISTER_FN_RN(env, emu_glBlendFunc, "glBlendFunc");

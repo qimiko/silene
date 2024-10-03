@@ -28,4 +28,9 @@ std::uint32_t emu_pthread_mutex_unlock(Environment& env, std::uint32_t mutex_ptr
 	return 0;
 }
 
+std::int32_t emu_pthread_cond_broadcast(Environment& env, std::uint32_t cond_ptr) {
+	spdlog::info("TODO: pthread_cond_broadcast");
+	return 0;
+}
+
 #endif

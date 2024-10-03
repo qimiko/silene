@@ -23,6 +23,10 @@ float emu_cosf(Environment& env, float x) {
   return std::cosf(x);
 }
 
+double emu_sqrt(Environment& env, double x) {
+  return std::sqrt(x);
+}
+
 float emu_sqrtf(Environment& env, float x) {
   return std::sqrtf(x);
 }

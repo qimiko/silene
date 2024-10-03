@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
 	#ifdef SILENE_USE_EGL
 	ImGui_ImplOpenGL3_Init("#version 300 es");
 	#else
-	ImGui_ImplOpenGL3_Init("#version 150");
+	ImGui_ImplOpenGL3_Init("#version 120");
 	#endif
 
 	AndroidEnvironment env{};

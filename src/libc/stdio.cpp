@@ -312,18 +312,22 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 							case 1: {
 								auto r_byte = static_cast<std::int8_t>(ret);
 								env.memory_manager()->write_byte(next_ptr, std::bit_cast<std::uint8_t>(r_byte));
+								break;
 							}
 							case 2: {
 								auto r_hw = static_cast<std::int16_t>(ret);
 								env.memory_manager()->write_halfword(next_ptr, std::bit_cast<std::uint16_t>(r_hw));
+								break;
 							}
 							default:
 							case 4: {
 								auto r_w = static_cast<std::int32_t>(ret);
 								env.memory_manager()->write_word(next_ptr, std::bit_cast<std::uint32_t>(r_w));
+								break;
 							}
 							case 8: {
 								env.memory_manager()->write_doubleword(next_ptr, std::bit_cast<std::uint64_t>(ret));
+								break;
 							}
 						}
 						src_data = end_ptr;

@@ -154,6 +154,16 @@ std::int32_t emu_sprintf(Environment& env, std::uint32_t output_ptr, std::uint32
 	return formatted.size();
 }
 
+std::int32_t emu_snprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t output_size, std::uint32_t format_ptr, Variadic v) {
+	auto output = env.memory_manager()->read_bytes<char>(output_ptr);
+	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
+
+	auto formatted = perform_printf(env, format, v);
+	std::strncpy(output, formatted.c_str(), output_size);
+
+	return std::min(static_cast<std::uint32_t>(formatted.size()), output_size);
+}
+
 std::int32_t emu_vsprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t format_ptr, VaList va) {
 	auto output = env.memory_manager()->read_bytes<char>(output_ptr);
 	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
@@ -197,6 +207,9 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 	auto in_specifier = false;
 	auto fmt_specifier = '\0';
 
+	std::unordered_set<char> valid_flags{'h'};
+	std::string fmt_flags{};
+
 	auto args_count = 0;
 
 	auto inc_src = [&](char c) {
@@ -228,13 +241,19 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 			case '%':
 				if (!in_specifier) {
 					in_specifier = true;
+					fmt_flags.clear();
 					break;
 				}
 				inc_src(c);
 				break;
 			default:
 				if (in_specifier) {
-					spdlog::info("unknown sscanf specifier {}", c);
+					if (valid_flags.contains(c)) {
+						fmt_flags.push_back(c);
+						break;
+					} else {
+						spdlog::info("unknown sscanf specifier {}", c);
+					}
 				}
 				inc_src(c);
 		}
@@ -260,7 +279,7 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 					char* end_ptr = nullptr;
 					auto ret = std::strtof(src_data, &end_ptr);
 
-					spdlog::trace("parse float arg {} -> {}", args_count, ret);
+					spdlog::trace("parse float arg {} : *{:#x} -> {}", args_count, next_ptr, ret);
 
 					if (end_ptr != src_data) {
 						success = true;
@@ -272,13 +291,41 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 				}
 				case 'i': {
 					char* end_ptr = nullptr;
-					auto ret = static_cast<std::int32_t>(std::strtol(src_data, &end_ptr, 0));
+					auto ret = std::strtol(src_data, &end_ptr, 0);
 
-					spdlog::trace("parse int arg {} -> {}", args_count, ret);
+					auto write_size = 4;
+					if (!fmt_flags.empty()) {
+						if (fmt_flags == "hh") {
+							write_size = 1;
+						} else if (fmt_flags == "h") {
+							write_size = 2;
+						} else if (fmt_flags == "l") {
+							write_size = 8;
+						}
+					}
+
+					spdlog::trace("parse int arg {} : *{:#x} -> {}", args_count, next_ptr, ret);
 
 					if (end_ptr != src_data) {
 						success = true;
-						env.memory_manager()->write_word(next_ptr, std::bit_cast<std::uint32_t>(ret));
+						switch (write_size) {
+							case 1: {
+								auto r_byte = static_cast<std::int8_t>(ret);
+								env.memory_manager()->write_byte(next_ptr, std::bit_cast<std::uint8_t>(r_byte));
+							}
+							case 2: {
+								auto r_hw = static_cast<std::int16_t>(ret);
+								env.memory_manager()->write_halfword(next_ptr, std::bit_cast<std::uint16_t>(r_hw));
+							}
+							default:
+							case 4: {
+								auto r_w = static_cast<std::int32_t>(ret);
+								env.memory_manager()->write_word(next_ptr, std::bit_cast<std::uint32_t>(r_w));
+							}
+							case 8: {
+								env.memory_manager()->write_doubleword(next_ptr, std::bit_cast<std::uint64_t>(ret));
+							}
+						}
 						src_data = end_ptr;
 					}
 
@@ -288,7 +335,7 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 					char* end_ptr = nullptr;
 					auto ret = static_cast<std::int32_t>(std::strtol(src_data, &end_ptr, 10));
 
-					spdlog::trace("parse decimal arg {} -> {}", args_count, ret);
+					spdlog::trace("parse decimal arg {} : *{:#x} -> {}", args_count, next_ptr, ret);
 
 					if (end_ptr != src_data) {
 						success = true;
@@ -302,7 +349,7 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 					char* end_ptr = nullptr;
 					auto ret = std::strtoul(src_data, &end_ptr, 10);
 
-					spdlog::trace("parse unsigned decimal arg {} -> {}", args_count, ret);
+					spdlog::trace("parse unsigned decimal arg {} : *{:#x} -> {}", args_count, next_ptr, ret);
 
 					if (end_ptr != src_data) {
 						success = true;

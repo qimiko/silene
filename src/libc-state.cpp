@@ -176,6 +176,7 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, strncmp);
 	REGISTER_FN(env, btowc);
 	REGISTER_FN(env, wctype);
+	REGISTER_FN(env, wcslen);
 	REGISTER_FN(env, wctob);
 	REGISTER_FN(env, atoi);
 	REGISTER_FN(env, pthread_key_create);
@@ -206,6 +207,7 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, memcmp);
 	REGISTER_FN(env, __android_log_print);
 	REGISTER_FN(env, sprintf);
+	REGISTER_FN(env, snprintf);
 	REGISTER_FN(env, strcpy);
 	REGISTER_FN(env, strncpy);
 	REGISTER_FN(env, vsprintf);
@@ -227,6 +229,21 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, ftime);
 	REGISTER_FN(env, srand48);
 	REGISTER_FN(env, tolower);
+
+	auto ctype_addr = this->_memory->get_next_word_addr();
+	this->_memory->allocate(sizeof(emu__ctype_));
+	this->_memory->copy(ctype_addr, &emu__ctype_, sizeof(emu__ctype_));
+	env.program_loader().add_stub_symbol(ctype_addr, "_ctype_");
+
+	auto tolower_tab_addr = this->_memory->get_next_word_addr();
+	this->_memory->allocate(sizeof(emu__tolower_tab_));
+	this->_memory->copy(tolower_tab_addr, &emu__tolower_tab_, sizeof(emu__tolower_tab_));
+	env.program_loader().add_stub_symbol(tolower_tab_addr, "_tolower_tab_");
+
+	auto toupper_tab_addr = this->_memory->get_next_word_addr();
+	this->_memory->allocate(sizeof(emu__toupper_tab_));
+	this->_memory->copy(toupper_tab_addr, &emu__toupper_tab_, sizeof(emu__toupper_tab_));
+	env.program_loader().add_stub_symbol(toupper_tab_addr, "_toupper_tab_");
 
 	REGISTER_SYSCALL(env, openat, 0x142);
 

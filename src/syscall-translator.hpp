@@ -44,8 +44,12 @@ namespace SyscallTranslator {
 		concept is_one_of = (std::same_as<T, Types> || ...);
 	}
 
-	inline std::uint32_t pull_arg(Environment& env, std::uint32_t idx) {
+	inline std::uint32_t pull_arg(Environment& env, std::uint32_t& idx, bool qword_align = false) {
 		if (idx < 4) {
+			if (qword_align && idx % 2 != 0) {
+				idx++;
+			}
+
 			// r0 - r3 stores the first 4 arguments
 			return env.current_cpu()->Regs()[idx];
 		} else {
@@ -53,15 +57,28 @@ namespace SyscallTranslator {
 			auto sp = env.current_cpu()->Regs()[13];
 			auto sp_offs = sp + (idx - 4) * 4;
 
+			if (qword_align && sp_offs % 8 != 0) {
+				sp_offs += 4;
+				idx++;
+			}
+
 			return env.memory_manager()->read_word(sp_offs);
 		}
 	}
 
-	inline void push_arg(Environment& env, std::uint32_t idx, std::uint32_t value) {
+	inline void push_arg(Environment& env, std::uint32_t& idx, std::uint32_t value, bool qword_align = false) {
 		if (idx < 4) {
+			if (qword_align && idx % 2 != 0) {
+				idx++;
+			}
+
 			env.current_cpu()->Regs()[idx] = value;
 		} else {
 			auto& sp = env.current_cpu()->Regs()[13];
+			if (qword_align && sp % 8 != 0) {
+				sp -= 4;
+			}
+
 			env.memory_manager()->write_word(sp, value);
 
 			sp -= 4;
@@ -77,11 +94,12 @@ namespace SyscallTranslator {
 
 	template <typename T> requires is_one_of<T, std::uint64_t, std::int64_t, double>
 	inline T translate_reg(Environment& env, std::uint32_t& idx) {
-		auto val = std::bit_cast<T>(
-			static_cast<std::uint64_t>(pull_arg(env, idx)) |
-			static_cast<std::uint64_t>(pull_arg(env, idx + 1)) << 32
-		);
-		idx += 2;
+		auto lhs = static_cast<std::uint64_t>(pull_arg(env, idx, true));
+		idx++;
+		auto rhs = static_cast<std::uint64_t>(pull_arg(env, idx));
+		idx++;
+
+		auto val = std::bit_cast<T>(lhs | rhs << 32);
 
 		return val;
 	}
@@ -108,9 +126,11 @@ namespace SyscallTranslator {
 	template <typename T> requires is_one_of<T, std::uint64_t, std::int64_t, double>
 	inline void translate_call_arg(Environment& env, std::uint32_t& idx, T value) {
 		auto data = std::bit_cast<std::uint64_t>(value);
-		push_arg(env, idx, static_cast<std::uint32_t>(data));
-		push_arg(env, idx + 1, static_cast<std::uint32_t>(data >> 32));
-		idx += 2;
+		push_arg(env, idx, static_cast<std::uint32_t>(data), true);
+		idx++;
+
+		push_arg(env, idx, static_cast<std::uint32_t>(data >> 32));
+		idx++;
 	}
 
 	template <typename T> requires std::same_as<T, bool>

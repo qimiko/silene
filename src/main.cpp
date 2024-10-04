@@ -186,6 +186,13 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 #endif
+
+	auto vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+	auto renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+	auto version = reinterpret_cast<const char*>(glGetString(GL_VERSION));
+
+	spdlog::info("gl information: {} ({}) - {}", renderer, vendor, version);
+
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;

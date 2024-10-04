@@ -59,7 +59,7 @@ void emu_glPixelStorei(Environment& env, std::uint32_t name, std::int32_t param)
 std::uint32_t emu_glCreateShader(Environment& env, std::uint32_t type) {
 	auto r = glCreateShader(type);
 
-	spdlog::trace("glCreateShader(type: {}) -> {}", type, glGetError());
+	spdlog::trace("glCreateShader(type: {}) => {} -> {}", type, r, glGetError());
 
 	return r;
 }
@@ -80,10 +80,18 @@ void emu_glShaderSource(Environment& env, std::uint32_t shader, std::uint32_t co
 
 	for (auto i = 0u; i < count; i++) {
 		auto ptr = env.memory_manager()->read_bytes<char>(str_ptr[i]);
+
+#ifndef SILENE_USE_EGL
+		// desktop opengl doesn't support precision
+		if (std::strcmp("precision highp float;\n", ptr) == 0 || std::strcmp("precision mediump float;\n", ptr) == 0) {
+			continue;
+		}
+#endif
+
 		str_ptr_tr.push_back(ptr);
 	}
 
-	glShaderSource(shader, count, str_ptr_tr.data(), len);
+	glShaderSource(shader, str_ptr_tr.size(), str_ptr_tr.data(), len);
 
 	spdlog::trace("glShaderSource(shader: {}, count: {}, strs: {:#x}, len: {:#x}) -> {}", shader, count, str_ptrs, len_ptr, glGetError());
 }
@@ -115,7 +123,20 @@ void emu_glGetShaderiv(Environment& env, std::uint32_t shader, std::uint32_t nam
 
 	glGetShaderiv(shader, name, data);
 
-	spdlog::trace("glGetShaderiv(shader: {}, name: {}, data: {:#x}) -> {}", shader, name, data_ptr, glGetError());
+	spdlog::trace("glGetShaderiv(shader: {}, name: {}, data: {:#x} => {}) -> {}", shader, name, data_ptr, *data, glGetError());
+}
+
+void emu_glGetShaderInfoLog(Environment& env, std::uint32_t shader, std::uint32_t max_length, std::uint32_t length_ptr, std::uint32_t info_log_ptr) {
+	auto length = env.memory_manager()->read_bytes<int>(length_ptr);
+	if (length_ptr == 0) {
+		length = nullptr;
+	}
+
+	auto info_log = env.memory_manager()->read_bytes<char>(info_log_ptr);
+
+	glGetShaderInfoLog(shader, max_length, length, info_log);
+
+	spdlog::trace("glGetShaderInfoLog(shader: {}, max_length: {}, length_ptr: {:#x}, info_log_ptr: {:#x} => {}) -> {}", shader, max_length, length_ptr, info_log_ptr, *info_log, glGetError());
 }
 
 std::uint32_t emu_glCreateProgram(Environment& env) {

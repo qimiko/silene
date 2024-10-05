@@ -132,7 +132,8 @@ std::uint32_t emu_strtok(Environment& env, std::uint32_t str_ptr, std::uint32_t 
 	str += token_len;
 
 	if (*str != '\0') {
-		*str++ = '\0';
+		*str = '\0';
+		str_ptr++;
 	}
 
 	env.libc().set_strtok_buffer(str_ptr);

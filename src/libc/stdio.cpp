@@ -79,6 +79,9 @@ std::string perform_printf(Environment& env, const std::string& format_str, T& v
 				}
 				break;
 			case 'f':
+			case 'g':
+				// TODO: they are slightly different in presentation,
+				// but not sure how to represent that with stringstreams
 				if (in_format) {
 					ss << v.template next<double>();
 					in_format = false;
@@ -184,10 +187,12 @@ std::int32_t emu_vsnprintf(Environment& env, std::uint32_t output_ptr, std::uint
 	return std::min(static_cast<std::uint32_t>(formatted.size()), output_size);
 }
 
-std::int32_t emu_fprintf(Environment& env, std::uint32_t output_file, std::uint32_t format_ptr) {
+std::int32_t emu_fprintf(Environment& env, std::uint32_t output_file, std::uint32_t format_ptr, Variadic v) {
 	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
 
-	spdlog::info("TODO: fprintf({}) - {}", output_file, format);
+	auto formatted = perform_printf(env, format, v);
+
+	spdlog::info("TODO: fprintf({}) -> {}", output_file, formatted);
 	return 0;
 }
 

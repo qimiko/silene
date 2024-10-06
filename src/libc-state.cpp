@@ -223,6 +223,7 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, strtok);
 	REGISTER_FN(env, gettimeofday);
 	REGISTER_FN(env, time);
+	REGISTER_FN(env, clock_gettime);
 	REGISTER_FN(env, getenv);
 	REGISTER_FN(env, lrand48);
 	REGISTER_FN(env, arc4random);

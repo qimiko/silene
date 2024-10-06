@@ -382,6 +382,48 @@ void emu_glUniform1f(Environment& env, std::int32_t location, float v0) {
 	glUniform1f(location, v0);
 }
 
+void emu_glBindRenderbuffer(Environment& env, std::uint32_t target, std::uint32_t renderbuffer) {
+	glBindRenderbuffer(target, renderbuffer);
+}
+
+void emu_glBindFramebuffer(Environment& env, std::uint32_t target, std::uint32_t framebuffer) {
+	glBindFramebuffer(target, framebuffer);
+}
+
+void emu_glFramebufferTexture2D(Environment& env, std::uint32_t target, std::uint32_t attachment, std::uint32_t textarget, std::uint32_t texture, std::int32_t level) {
+	glFramebufferTexture2D(target, attachment, textarget, texture, level);
+}
+
+void emu_glGenRenderbuffers(Environment& env, int32_t n, uint32_t renderbuffers_ptr) {
+	auto renderbuffers = env.memory_manager()->read_bytes<std::uint32_t>(renderbuffers_ptr);
+	if (renderbuffers_ptr == 0) {
+		renderbuffers = nullptr;
+	}
+
+	glGenRenderbuffers(n, renderbuffers);
+}
+
+void emu_glFramebufferRenderbuffer(Environment& env, std::uint32_t target, std::uint32_t attachment, std::uint32_t renderbuffertarget, std::int32_t renderbuffer) {
+	glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer);
+}
+
+void emu_glGenFramebuffers(Environment& env, std::int32_t n, std::uint32_t framebuffers_ptr) {
+	auto framebuffers = env.memory_manager()->read_bytes<std::uint32_t>(framebuffers_ptr);
+	if (framebuffers_ptr == 0) {
+		framebuffers = nullptr;
+	}
+
+	glGenFramebuffers(n, framebuffers);
+}
+
+std::uint32_t emu_glCheckFramebufferStatus(Environment& env, std::uint32_t target) {
+	return glCheckFramebufferStatus(target);
+}
+
+void emu_glUniform4f(Environment& env, std::int32_t location, float v0, GLfloat v1, float v2, float v3) {
+	glUniform4f(location, v0, v1, v2, v3);
+}
+
 std::uint32_t emu_glGetError(Environment& env) {
 	return glGetError();
 }

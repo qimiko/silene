@@ -2,3 +2,5 @@ build/**
 test/**
 .vscode/**
 output/**
+.cache/**
+**/.DS_Store

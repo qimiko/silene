@@ -20,7 +20,7 @@ std::int32_t emu_sprintf(Environment& env, std::uint32_t output_ptr, std::uint32
 std::int32_t emu_snprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t output_size, std::uint32_t format_ptr, Variadic v);
 std::int32_t emu_vsprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t format_ptr, VaList va);
 std::int32_t emu_vsnprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t output_size, std::uint32_t format_ptr, VaList va);
-std::int32_t emu_fprintf(Environment& env, std::uint32_t output_file, std::uint32_t format_ptr);
+std::int32_t emu_fprintf(Environment& env, std::uint32_t output_file, std::uint32_t format_ptr, Variadic v);
 std::int32_t emu_fputc(Environment& env, std::int32_t character, std::uint32_t output_file);
 std::int32_t emu_sscanf(Environment& env, std::uint32_t buf_ptr, std::uint32_t format_ptr, Variadic v);
 

@@ -62,4 +62,18 @@ int emu_ftime(Environment& env, std::uint32_t tp_ptr) {
 	return 0;
 }
 
+int emu_clock_gettime(Environment& env, std::int32_t clock_id, std::uint32_t ts_ptr) {
+	struct timespec ts{};
+
+	auto r = clock_gettime(static_cast<clockid_t>(clock_id), &ts);
+	if (r < 0) {
+		return r;
+	}
+
+	env.memory_manager()->write_word(ts_ptr, static_cast<std::int32_t>(ts.tv_sec));
+	env.memory_manager()->write_word(ts_ptr + 4, static_cast<std::int32_t>(ts.tv_nsec));
+
+	return 0;
+}
+
 #endif

@@ -78,6 +78,17 @@ void glfw_mouse_move_callback(GLFWwindow* window, double xpos, double ypos) {
 	}
 }
 
+void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+	if (key != GLFW_KEY_ESCAPE || action != GLFW_PRESS) {
+		return;
+	}
+
+	if (auto env = reinterpret_cast<AndroidEnvironment*>(glfwGetWindowUserPointer(window)); env != nullptr) {
+		auto jni_env_ptr = env->jni().get_env_ptr();
+		env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeKeyDown", jni_env_ptr, 0, 4 /* AKEYCODE_BACK */);
+	}
+}
+
 int main(int argc, char** argv) {
 	CLI::App app;
 	argv = app.ensure_utf8(argv);
@@ -275,6 +286,7 @@ int main(int argc, char** argv) {
 
 	glfwSetMouseButtonCallback(window, &glfw_mouse_callback);
 	glfwSetCursorPosCallback(window, &glfw_mouse_move_callback);
+	glfwSetKeyCallback(window, &glfw_key_callback);
 
 	env.libc().expose_file("/application_resources.apk", app_resources);
 

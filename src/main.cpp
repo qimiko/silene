@@ -79,13 +79,35 @@ void glfw_mouse_move_callback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	if (key != GLFW_KEY_ESCAPE || action != GLFW_PRESS) {
+	if (action != GLFW_PRESS) {
 		return;
 	}
 
 	if (auto env = reinterpret_cast<AndroidEnvironment*>(glfwGetWindowUserPointer(window)); env != nullptr) {
 		auto jni_env_ptr = env->jni().get_env_ptr();
-		env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeKeyDown", jni_env_ptr, 0, 4 /* AKEYCODE_BACK */);
+
+		if (!env->has_symbol("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInsertText") &&
+			!env->has_symbol("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeDeleteBackward")) return;
+
+		auto key_name = glfwGetKeyName(key, scancode);
+		
+		switch (key) {
+			case GLFW_KEY_BACKSPACE:
+				env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeDeleteBackward", jni_env_ptr, 0);
+				break;
+			case GLFW_KEY_ESCAPE:
+				env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeKeyDown", jni_env_ptr, 0, 4 /* AKEYCODE_BACK */);
+				break;
+			case GLFW_KEY_SPACE:
+				env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInsertText", 
+					jni_env_ptr, 0, env->jni().create_string_ref(" "));
+				break;
+			default:
+				if (key_name)
+					env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInsertText", 
+						jni_env_ptr, 0, env->jni().create_string_ref(key_name));
+				break;
+		}
 	}
 }
 

@@ -185,6 +185,11 @@ int main(int argc, char** argv) {
 
 	glfwSetErrorCallback(glfw_error_callback);
 
+#if defined(__APPLE__) && defined(SILENE_USE_ANGLE)
+	// angle on metal runs significantly better than on desktop gl
+	glfwInitHint(GLFW_ANGLE_PLATFORM_TYPE, GLFW_ANGLE_PLATFORM_TYPE_METAL);
+#endif
+
 	if (!glfwInit())
 		return 1;
 
@@ -200,10 +205,13 @@ int main(int argc, char** argv) {
 
 	glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GL_TRUE);
 
-	auto window = glfwCreateWindow(640, 480, "Silene", nullptr, nullptr);
+	std::filesystem::path apk_path{app_apk};
+	auto window_title = fmt::format("{} (Silene)", apk_path.filename().string());
+
+	auto window = glfwCreateWindow(1280, 720, window_title.c_str(), nullptr, nullptr);
 	if (!window) {
 		glfwWindowHint(GLFW_CONTEXT_CREATION_API, GLFW_NATIVE_CONTEXT_API);
-		window = glfwCreateWindow(640, 480, "Silene", nullptr, nullptr);
+		window = glfwCreateWindow(1280, 720, window_title.c_str(), nullptr, nullptr);
 		if (!window) {
 			glfwTerminate();
 			return 1;

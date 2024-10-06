@@ -378,6 +378,10 @@ void emu_glLineWidth(Environment& env, float width) {
 	glLineWidth(width);
 }
 
+void emu_glUniform1f(Environment& env, std::int32_t location, float v0) {
+	glUniform1f(location, v0);
+}
+
 std::uint32_t emu_glGetError(Environment& env) {
 	return glGetError();
 }

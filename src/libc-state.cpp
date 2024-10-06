@@ -295,4 +295,5 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN_RN(env, emu_glGetError, "glGetError");
 	REGISTER_FN_RN(env, emu_glScissor, "glScissor");
 	REGISTER_FN_RN(env, emu_glGetShaderInfoLog, "glGetShaderInfoLog");
+	REGISTER_FN_RN(env, emu_glUniform1f, "glUniform1f");
 }

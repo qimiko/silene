@@ -295,4 +295,13 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN_RN(env, emu_glGetError, "glGetError");
 	REGISTER_FN_RN(env, emu_glScissor, "glScissor");
 	REGISTER_FN_RN(env, emu_glGetShaderInfoLog, "glGetShaderInfoLog");
+	REGISTER_FN_RN(env, emu_glUniform1f, "glUniform1f");
+	REGISTER_FN_RN(env, emu_glBindRenderbuffer, "glBindRenderbuffer");
+	REGISTER_FN_RN(env, emu_glBindFramebuffer, "glBindFramebuffer");
+	REGISTER_FN_RN(env, emu_glFramebufferTexture2D, "glFramebufferTexture2D");
+	REGISTER_FN_RN(env, emu_glGenRenderbuffers, "glGenRenderbuffers");
+	REGISTER_FN_RN(env, emu_glFramebufferRenderbuffer, "glFramebufferRenderbuffer");
+	REGISTER_FN_RN(env, emu_glGenFramebuffers, "glGenFramebuffers");
+	REGISTER_FN_RN(env, emu_glCheckFramebufferStatus, "glCheckFramebufferStatus");
+	REGISTER_FN_RN(env, emu_glUniform4f, "glUniform4f");
 }

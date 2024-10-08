@@ -354,9 +354,15 @@ void emu_glBufferSubData(Environment& env, std::uint32_t target, std::uint32_t o
 }
 
 void emu_glVertexAttribPointer(Environment& env, std::uint32_t index, std::int32_t size, std::uint32_t type, bool normalized, std::uint32_t stride, std::uint32_t pointer_ptr) {
-	auto pointer = env.memory_manager()->read_bytes<void>(pointer_ptr);
-	if (pointer_ptr == 0) {
-		pointer = nullptr;
+	void* pointer = nullptr;
+	GLint binding = 0;
+	
+	glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &binding);
+
+	if (binding) {
+		pointer = reinterpret_cast<void*>(pointer_ptr);
+	} else if (pointer_ptr != 0) {
+		pointer = env.memory_manager()->read_bytes<void>(pointer_ptr);
 	}
 
 	glVertexAttribPointer(index, size, type, normalized, stride, pointer);

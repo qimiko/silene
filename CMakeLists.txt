@@ -41,7 +41,6 @@ set(SRC_FILES
 	src/syscall-handler.cpp
 	src/android-environment.cpp
 	src/android-coprocessor.cpp
-	src/audio-engine.cpp
 	src/zip-file.cpp
 	src/main.cpp
 

@@ -22,6 +22,7 @@
 #include "elf.h"
 #include "elf-loader.h"
 #include "zip-file.h"
+#include "audio-engine.h"
 
 #include "hook/fileutils.h"
 
@@ -299,6 +300,9 @@ int main(int argc, char** argv) {
 
 	env.pre_init();
 
+	AudioEngine audio_engine{};
+	audio_engine.init_symbols(env);
+
 	/*
 	env.program_loader().map_elf(libc);
 	env.post_load();
@@ -369,9 +373,11 @@ int main(int argc, char** argv) {
 		last_time = current_time;
     accumulated_time += dt;
 
+		/*
 		if (accumulated_time < (1.0 / 60.0)) {
 			continue;
 		}
+		*/
 
 		auto update_dt = current_time - last_update_time;
     last_update_time = current_time;

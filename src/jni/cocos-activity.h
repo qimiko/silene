@@ -1,7 +1,7 @@
 #pragma once
 
-#ifndef _JNI_BASE_COCOS_ACTIVITY_H
-#define _JNI_BASE_COCOS_ACTIVITY_H
+#ifndef _JNI_COCOS_ACTIVITY_H
+#define _JNI_COCOS_ACTIVITY_H
 
 #include "../environment.h"
 

@@ -2,6 +2,7 @@
 
 #include "jni/base-robtop-activity.h"
 #include "jni/cocos-activity.h"
+#include "jni/cocos-bitmap.h"
 
 #define REGISTER_STATIC(CLASS, SIGNATURE, NAME) \
 	register_static(CLASS, SIGNATURE, &SyscallTranslator::translate_wrap<&jni_##NAME>)
@@ -60,6 +61,8 @@ void JniState::pre_init(Environment& env) {
 
 	REGISTER_STATIC("com/customRobTop/BaseRobTopActivity", "getUserID;()Ljava/lang/String;", get_user_id);
 	REGISTER_STATIC("org/cocos2dx/lib/Cocos2dxActivity", "showMessageBox;(Ljava/lang/String;Ljava/lang/String;)V", show_message_box);
+	REGISTER_STATIC("org/cocos2dx/lib/Cocos2dxBitmap", "createTextBitmapShadowStroke;(Ljava/lang/String;Ljava/lang/String;IFFFIIIZFFFZFFFF)V", show_message_box);
+	REGISTER_STATIC("org/cocos2dx/lib/Cocos2dxBitmap", "createTextBitmap;(Ljava/lang/String;Ljava/lang/String;IIII)V", create_text_bitmap);
 }
 
 std::uint32_t JniState::get_vm_ptr() const {

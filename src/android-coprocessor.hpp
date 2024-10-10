@@ -1,3 +1,8 @@
+#pragma once
+
+#ifndef _ANDROID_COPROCESSOR_HPP
+#define _ANDROID_COPROCESSOR_HPP
+
 #include <cstdint>
 #include <array>
 #include <variant>
@@ -20,3 +25,5 @@ private:
 	std::optional<Callback> CompileLoadWords(bool two, bool long_transfer, CoprocReg CRd, std::optional<std::uint8_t> option) override;
 	std::optional<Callback> CompileStoreWords(bool two, bool long_transfer, CoprocReg CRd, std::optional<std::uint8_t> option) override;
 };
+
+#endif

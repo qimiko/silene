@@ -127,7 +127,14 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 		}
 
 		if (Dynarmic::Has(halt_reason, HALT_REASON_HANDLE_SYSCALL)) {
-			this->_syscall_handler.on_symbol_call(*this);
+			try {
+				this->_syscall_handler.on_symbol_call(*this);
+			} catch (...) {
+				spdlog::error("unhandled exception in symbol handler");
+				this->dump_state();
+
+				throw;
+			}
 			halt_reason &= ~HALT_REASON_HANDLE_SYSCALL;
 		}
 

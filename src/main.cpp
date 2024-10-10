@@ -17,6 +17,7 @@
 
 #include "android-environment.hpp"
 #include "android-coprocessor.hpp"
+#include "keybind-manager.hpp"
 #include "paged-memory.hpp"
 #include "elf.h"
 #include "elf-loader.h"
@@ -44,6 +45,8 @@ void glfw_error_callback(int error, const char* description) {
 // TODO: move this into a separate class
 float glfw_scale_x = 1.0f;
 float glfw_scale_y = 1.0f;
+
+KeybindManager* keybind_manager = nullptr;
 
 void glfw_mouse_callback(GLFWwindow* window, int button, int action, int mods) {
 	if (button != GLFW_MOUSE_BUTTON_LEFT) {
@@ -79,11 +82,17 @@ void glfw_mouse_move_callback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	if (action != GLFW_PRESS) {
-		return;
-	}
-
 	if (auto env = reinterpret_cast<AndroidEnvironment*>(glfwGetWindowUserPointer(window)); env != nullptr) {
+		if (keybind_manager != nullptr) {
+			keybind_manager->handle(key, scancode, action);
+
+			return;
+		}
+
+		if (action != GLFW_PRESS) {
+			return;
+		}
+
 		auto jni_env_ptr = env->jni().get_env_ptr();
 
 		if (!env->has_symbol("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInsertText") &&
@@ -134,6 +143,13 @@ int main(int argc, char** argv) {
 	app.add_option("--link", support_dir, "path to load support binaries from")
 		->capture_default_str()
 		->check(CLI::ExistingDirectory);
+
+	bool show_cursor_pos = false;
+	app.add_flag("--show-cursor-pos", show_cursor_pos, "enables showing the cursor position on the info dialog. useful for making keybinds");
+
+	std::string keybind_file;
+	app.add_option("--keybinds", keybind_file, "path to keybind file, if unspecified keybinding is disabled")
+		->check(CLI::ExistingFile);
 
 	CLI11_PARSE(app, argc, argv);
 
@@ -251,6 +267,10 @@ int main(int argc, char** argv) {
 
 	AndroidEnvironment env{};
 	glfwSetWindowUserPointer(window, &env);
+
+	if (!keybind_file.empty()) {
+		keybind_manager = new KeybindManager(keybind_file, env);
+	}
 
 	auto cp15 = std::make_shared<AndroidCP15>();
 
@@ -372,6 +392,14 @@ int main(int argc, char** argv) {
 			ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always, ImVec2(0.0f, 0.0f));
 			if (ImGui::Begin("Info Dialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
 				ImGui::Text("FPS: %.0f", 1.0/update_dt);
+
+				if (show_cursor_pos) {
+					double xpos, ypos;
+
+					glfwGetCursorPos(window, &xpos, &ypos);
+
+					ImGui::Text("X: %.0f | Y: %.0f", xpos * glfw_scale_x, ypos * glfw_scale_y);
+				}
 			}
 		}
 

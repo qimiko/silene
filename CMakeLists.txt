@@ -20,6 +20,7 @@ CPMAddPackage("gh:qimiko/dynarmic#6.7.0")
 CPMAddPackage("gh:gabime/spdlog@1.14.1")
 CPMAddPackage("gh:CLIUtils/CLI11@2.4.2")
 CPMAddPackage("gh:zlib-ng/minizip-ng#4.0.7")
+CPMAddPackage("gh:ToruNiina/toml11@4.2.0")
 
 CPMAddPackage(
 	NAME imgui
@@ -66,6 +67,7 @@ target_link_libraries(silene dynarmic)
 target_link_libraries(silene spdlog)
 target_link_libraries(silene CLI11::CLI11)
 target_link_libraries(silene minizip)
+target_link_libraries(silene toml11::toml11)
 
 target_include_directories(silene PRIVATE "${imgui_SOURCE_DIR}")
 

@@ -32,7 +32,7 @@ Building is done with CMake. You can build the project by using these commands:
 
 Feel free to adapt those commands to fit your own needs.
 
-Unfortunately, [Boost](https://www.boost.org/) must be installed on your system to successfully build.
+On Linux, you'll need to install the OpenGL and GLFW dev packages. For macOS, these dependencies are bundled inside of the repo.
 
 ### Running
 

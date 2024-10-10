@@ -16,7 +16,7 @@ option(SILENE_USE_EGL "Uses OpenGL ES instead of desktop OpenGL, if ANGLE is not
 
 include(cmake/CPM.cmake)
 
-CPMAddPackage("gh:qimiko/dynarmic#6.7.0")
+CPMAddPackage("gh:qimiko/dynarmic#1f55a37")
 CPMAddPackage("gh:gabime/spdlog@1.14.1")
 CPMAddPackage("gh:CLIUtils/CLI11@2.4.2")
 CPMAddPackage("gh:zlib-ng/minizip-ng#4.0.7")
@@ -42,6 +42,7 @@ set(SRC_FILES
 	src/syscall-handler.cpp
 	src/android-environment.cpp
 	src/android-coprocessor.cpp
+	src/audio-engine.cpp
 	src/zip-file.cpp
 	src/main.cpp
 
@@ -70,6 +71,7 @@ target_link_libraries(silene minizip)
 target_link_libraries(silene toml11::toml11)
 
 target_include_directories(silene PRIVATE "${imgui_SOURCE_DIR}")
+target_include_directories(silene PRIVATE "${CMAKE_SOURCE_DIR}/third_party/include/soloud")
 
 if (SILENE_USE_ANGLE)
 	target_compile_definitions(silene PRIVATE -DIMGUI_IMPL_OPENGL_ES2)
@@ -92,6 +94,7 @@ endif()
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
 	target_include_directories(silene PRIVATE "${CMAKE_SOURCE_DIR}/third_party/include/glfw")
 	target_link_libraries(silene "${CMAKE_SOURCE_DIR}/third_party/link/macos/libglfw.3.dylib")
+	target_link_libraries(silene "${CMAKE_SOURCE_DIR}/third_party/link/macos/libsoloud.a")
 
 	if(SILENE_USE_ANGLE)
 		target_link_libraries(silene "${CMAKE_SOURCE_DIR}/third_party/link/macos/libGLESv2.dylib")
@@ -105,6 +108,11 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
 	find_library(APP_SERVICES_LIBRARY ApplicationServices)
 	mark_as_advanced(APP_SERVICES_LIBRARY)
 	target_link_libraries(silene ${APP_SERVICES_LIBRARY})
+
+	target_link_libraries(silene "-framework AudioToolbox")
+	find_library(AUDIO_TOOLBOX_LIBRARY AudioToolbox)
+	mark_as_advanced(AUDIO_TOOLBOX_LIBRARY)
+	target_link_libraries(silene ${AUDIO_TOOLBOX_LIBRARY})
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 	find_package(glfw3 3.3 REQUIRED)
 	target_include_directories(silene PRIVATE ${GLFW_INCLUDE_DIRS})

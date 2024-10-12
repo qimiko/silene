@@ -14,6 +14,13 @@ android {
         versionCode = 1
         versionName = "0.0.1"
 
+        @Suppress("UnstableApiUsage")
+        externalNativeBuild {
+            cmake {
+                arguments("-DANDROID_STL=c++_shared")
+            }
+        }
+
         ndk.abiFilters += listOf("arm64-v8a", "x86_64")
     }
 
@@ -52,4 +59,5 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.games.activity)
+    implementation(libs.androidx.games.framePacing)
 }

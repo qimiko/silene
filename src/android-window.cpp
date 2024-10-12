@@ -6,6 +6,8 @@
 #include <GLES2/gl2.h>
 #include <EGL/egl.h>
 
+#include <swappy/swappyGL.h>
+
 #include <imgui.h>
 #include <backends/imgui_impl_android.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -246,6 +248,7 @@ void AndroidWindow::handle_command(std::int32_t cmd) {
 			spdlog::info("APP_CMD_INIT_WINDOW");
 			if (_window->window != nullptr) {
 				_has_window = true;
+				SwappyGL_setWindow(_window->window);
 				_has_focus = true;
 			}
 			break;
@@ -253,6 +256,7 @@ void AndroidWindow::handle_command(std::int32_t cmd) {
 			spdlog::info("APP_CMD_TERM_WINDOW");
 			this->kill_display();
 
+			SwappyGL_destroy();
 			_window->activity->vm->DetachCurrentThread();
 			_has_window = false;
 
@@ -310,6 +314,8 @@ bool AndroidWindow::init() {
 		return false;
 	}
 
+	SwappyGL_init(_jni, _window->activity->javaGameActivity);
+
 	return true;
 }
 
@@ -331,15 +337,13 @@ void AndroidWindow::run_frame() {
 
 	// not a lot of imgui code here yet
 
-	ImGui::End();
-
 	ImGui::Render();
 
 	application().draw_frame();
 
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-	eglSwapBuffers(_egl_display, _egl_surface);
+	SwappyGL_swap(_egl_display, _egl_surface);
 }
 
 void AndroidWindow::main_loop() {

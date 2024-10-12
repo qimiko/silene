@@ -146,6 +146,15 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 	target_link_libraries(silene glfw)
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
 	find_package(game-activity REQUIRED CONFIG)
-	target_link_libraries(silene game-activity::game-activity_static EGL GLESv2 android log)
+	find_package(games-frame-pacing REQUIRED CONFIG)
+
+	target_link_libraries(silene
+		game-activity::game-activity_static
+		games-frame-pacing::swappy_static
+		EGL
+		GLESv2
+		android
+		log
+	)
 	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u Java_com_google_androidgamesdk_GameActivity_initializeNativeCode")
 endif()

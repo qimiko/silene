@@ -300,8 +300,8 @@ bool AndroidWindow::init() {
 	// annoyingly, we don't actually know if we have a window by this point, so no opengl is allowed
 	// but we can setup our inputs
 
-  _window->userData = this;
-  _window->onAppCmd = handle_cmd_proxy;
+	_window->userData = this;
+	_window->onAppCmd = handle_cmd_proxy;
 
 	if (_jni != nullptr) {
 		return true;

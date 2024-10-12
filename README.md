@@ -32,7 +32,7 @@ Building is done with CMake. You can build the project by using these commands:
 
 Feel free to adapt those commands to fit your own needs.
 
-On Linux, you'll need to install the OpenGL and GLFW dev packages. For macOS, these dependencies are bundled inside of the repo.
+On Linux, you'll need to install the OpenGL and GLFW dev packages. For macOS and Android, all necessary dependencies are bundled inside of the repo.
 
 ### Running
 
@@ -44,6 +44,10 @@ You can enable verbose logging with the `--verbose` flag.
 If you like to use GDB, you can also enable debugging with the `--debug` flag.
 
 If you want to use a newer version of Geometry Dash that splits the APK, the `--resources` flag will redirect resource loading accordingly.
+
+On Android, you can just run the bundled APK file.
+The initial menu will prompt you to select an APK file.
+There is currently no way to enable verbose or debug mode on that platform.
 
 ## License
 

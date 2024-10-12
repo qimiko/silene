@@ -39,8 +39,6 @@ class GlfwAppWindow : public BaseWindow {
 	static void glfw_key_callback(GLFWwindow*, int, int, int, int);
 
 public:
-	virtual std::pair<float, float> framebuffer_size() override;
-
 	virtual bool init() override;
 	virtual void main_loop() override;
 

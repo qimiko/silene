@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Silene</string>
+    <string name="error_dialog_name">Silene Error</string>
+    <string name="error_dialog_accept">OK</string>
+
+    <string name="select_welcome">Welcome to Silene!\nPlease select the APK you want to run.</string>
+    <string name="select_button">Select File</string>
+    <string name="select_copying">Copying application to internal files…\n</string>
+    <string name="select_failed">Failed to copy application!</string>
+    <string name="select_previous">Use Previous</string>
+</resources>

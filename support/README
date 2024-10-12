@@ -3,3 +3,4 @@ This folder contains some dependencies of Geometry Dash, if they were too annoyi
 The following libraries were pulled from the armeabi-v7a Android 5.0 system images:
 
 libz.so
+libc.so

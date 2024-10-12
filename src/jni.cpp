@@ -9,7 +9,7 @@
 #define REGISTER_STATIC(CLASS, SIGNATURE, NAME) \
 	register_static(CLASS, SIGNATURE, &SyscallTranslator::translate_wrap<&jni_##NAME>)
 
-void JniState::pre_init(const StateHolder& env) {
+void Silene::JniState::pre_init(const StateHolder& env) {
 	JavaVM vm;
 
 	vm.ptr_attachCurrentThread = REGISTER_STUB(env, attachCurrentThread);
@@ -65,12 +65,12 @@ void JniState::pre_init(const StateHolder& env) {
 	REGISTER_STATIC("org/cocos2dx/lib/Cocos2dxActivity", "showMessageBox;(Ljava/lang/String;Ljava/lang/String;)V", show_message_box);
 }
 
-std::uint32_t JniState::emu_newStringUTF(Environment& env, std::uint32_t java_env, std::uint32_t string_ptr) {
+std::uint32_t Silene::JniState::emu_newStringUTF(Environment& env, std::uint32_t java_env, std::uint32_t string_ptr) {
 	auto str = env.memory_manager().read_bytes<char>(string_ptr);
 	return env.jni().create_string_ref(str);
 }
 
-std::uint32_t JniState::emu_getStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t string, std::uint32_t is_copy_ptr) {
+std::uint32_t Silene::JniState::emu_getStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t string, std::uint32_t is_copy_ptr) {
 	try {
 		auto ref_v = env.jni().get_ref_value(string);
 		auto ref = std::get<std::string>(ref_v);
@@ -90,19 +90,19 @@ std::uint32_t JniState::emu_getStringUTFChars(Environment& env, std::uint32_t ja
 	}
 }
 
-std::uint32_t JniState::emu_getEnv(Environment& env, std::uint32_t java_env, std::uint32_t out_ptr, std::uint32_t version) {
+std::uint32_t Silene::JniState::emu_getEnv(Environment& env, std::uint32_t java_env, std::uint32_t out_ptr, std::uint32_t version) {
 	auto env_ptr = env.jni().get_env_ptr();
 	env.memory_manager().write_word(out_ptr, env_ptr);
 
 	return 0;
 }
 
-std::uint32_t JniState::emu_attachCurrentThread(Environment& env, std::uint32_t java_env, std::uint32_t p_env_ptr, std::uint32_t attach_args_ptr) {
+std::uint32_t Silene::JniState::emu_attachCurrentThread(Environment& env, std::uint32_t java_env, std::uint32_t p_env_ptr, std::uint32_t attach_args_ptr) {
 	// "Trying to attach a thread that is already attached is a no-op."
 	return 0;
 }
 
-std::uint32_t JniState::emu_findClass(Environment& env, std::uint32_t java_env, std::uint32_t name_ptr) {
+std::uint32_t Silene::JniState::emu_findClass(Environment& env, std::uint32_t java_env, std::uint32_t name_ptr) {
 	auto class_name = env.memory_manager().read_bytes<char>(name_ptr);
 
 	auto& jni = env.jni();
@@ -114,25 +114,25 @@ std::uint32_t JniState::emu_findClass(Environment& env, std::uint32_t java_env, 
 	return 0;
 }
 
-void JniState::emu_deleteLocalRef(Environment& env, std::uint32_t java_env, std::uint32_t local_ref) {
+void Silene::JniState::emu_deleteLocalRef(Environment& env, std::uint32_t java_env, std::uint32_t local_ref) {
 	env.jni().remove_ref(local_ref);
 }
 
-void JniState::emu_callStaticVoidMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id) {
+void Silene::JniState::emu_callStaticVoidMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id) {
 	env.jni().get_fn(local_ref, method_id)(env);
 }
 
-void JniState::emu_callStaticObjectMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id) {
+void Silene::JniState::emu_callStaticObjectMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id) {
 	// hopefully, the method we call correctly sets the return type
 	env.jni().get_fn(local_ref, method_id)(env);
 }
 
-JniState::StaticJavaClass::JniFunction JniState::get_fn(std::uint32_t class_id, std::uint32_t method_id) const {
+Silene::JniState::StaticJavaClass::JniFunction Silene::JniState::get_fn(std::uint32_t class_id, std::uint32_t method_id) const {
 	auto clazz = _class_mapping.at(class_id);
 	return clazz.method_impls.at(method_id);
 }
 
-std::uint32_t JniState::emu_getStaticMethodID(Environment& env, std::uint32_t java_env, std::uint32_t class_ptr, std::uint32_t name_ptr, std::uint32_t signature_ptr) {
+std::uint32_t Silene::JniState::emu_getStaticMethodID(Environment& env, std::uint32_t java_env, std::uint32_t class_ptr, std::uint32_t name_ptr, std::uint32_t signature_ptr) {
 	auto method_name = env.memory_manager().read_bytes<char>(name_ptr);
 	auto method_signature = env.memory_manager().read_bytes<char>(signature_ptr);
 
@@ -150,19 +150,19 @@ std::uint32_t JniState::emu_getStaticMethodID(Environment& env, std::uint32_t ja
 	return 0;
 }
 
-void JniState::remove_ref(std::uint32_t vaddr) {
+void Silene::JniState::remove_ref(std::uint32_t vaddr) {
 	this->_object_refs.erase(vaddr);
 }
 
-JniState::RefType& JniState::get_ref_value(std::uint32_t vaddr) {
+Silene::JniState::RefType& Silene::JniState::get_ref_value(std::uint32_t vaddr) {
 	return this->_object_refs.at(vaddr);
 }
 
-std::uint32_t JniState::create_string_ref(const std::string_view& str) {
+std::uint32_t Silene::JniState::create_string_ref(const std::string_view& str) {
 	return this->create_ref(std::string(str));
 }
 
-std::uint32_t JniState::create_ref(JniState::RefType x) {
+std::uint32_t Silene::JniState::create_ref(JniState::RefType x) {
 	auto addr = this->_memory.get_next_word_addr();
 	this->_memory.allocate(4);
 
@@ -176,7 +176,7 @@ std::uint32_t JniState::create_ref(JniState::RefType x) {
 	return addr;
 }
 
-std::uint32_t JniState::emu_getArrayLength(Environment& env, std::uint32_t java_env, std::uint32_t jarray) {
+std::uint32_t Silene::JniState::emu_getArrayLength(Environment& env, std::uint32_t java_env, std::uint32_t jarray) {
 	auto& ref_v = env.jni().get_ref_value(jarray);
 	if (std::holds_alternative<std::vector<int>>(ref_v)) {
 		auto& ref = std::get<std::vector<int>>(ref_v);
@@ -192,7 +192,7 @@ std::uint32_t JniState::emu_getArrayLength(Environment& env, std::uint32_t java_
 	return 0;
 }
 
-void JniState::emu_getIntArrayRegion(Environment& env, std::uint32_t java_env, std::uint32_t jarray, std::uint32_t start, std::uint32_t len, std::uint32_t buf_ptr) {
+void Silene::JniState::emu_getIntArrayRegion(Environment& env, std::uint32_t java_env, std::uint32_t jarray, std::uint32_t start, std::uint32_t len, std::uint32_t buf_ptr) {
 	auto& ref_v = env.jni().get_ref_value(jarray);
 	auto& ref = std::get<std::vector<int>>(ref_v);
 
@@ -201,7 +201,7 @@ void JniState::emu_getIntArrayRegion(Environment& env, std::uint32_t java_env, s
 	std::copy(ref.begin() + start, ref.begin() + start + len, buf);
 }
 
-void JniState::emu_getFloatArrayRegion(Environment& env, std::uint32_t java_env, std::uint32_t jarray, std::uint32_t start, std::uint32_t len, std::uint32_t buf_ptr) {
+void Silene::JniState::emu_getFloatArrayRegion(Environment& env, std::uint32_t java_env, std::uint32_t jarray, std::uint32_t start, std::uint32_t len, std::uint32_t buf_ptr) {
 	auto& ref_v = env.jni().get_ref_value(jarray);
 	auto& ref = std::get<std::vector<float>>(ref_v);
 
@@ -210,12 +210,12 @@ void JniState::emu_getFloatArrayRegion(Environment& env, std::uint32_t java_env,
 	std::copy(ref.begin() + start, ref.begin() + start + len, buf);
 }
 
-void JniState::emu_releaseStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t jstring, std::uint32_t string_ptr) {
+void Silene::JniState::emu_releaseStringUTFChars(Environment& env, std::uint32_t java_env, std::uint32_t jstring, std::uint32_t string_ptr) {
 	env.libc().free_memory(string_ptr);
 	// TODO: should we actually free the jstring here?
 }
 
-std::uint32_t JniState::register_static(std::string class_name, std::string signature, StaticJavaClass::JniFunction fn) {
+std::uint32_t Silene::JniState::register_static(std::string class_name, std::string signature, StaticJavaClass::JniFunction fn) {
 	if (auto jclass = _class_name_mapping.find(class_name); jclass != _class_name_mapping.end()) {
 		auto& clazz = _class_mapping[jclass->second];
 		if (auto jmethod = clazz.method_names.find(signature); jmethod != clazz.method_names.end()) {

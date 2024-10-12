@@ -159,14 +159,11 @@ bool GlfwAppWindow::init() {
 	return true;
 }
 
-std::pair<float, float> GlfwAppWindow::framebuffer_size() {
+void GlfwAppWindow::main_loop() {
 	int width, height;
 	glfwGetFramebufferSize(_window, &width, &height);
+	application().init_game(width, height);
 
-	return {width, height};
-}
-
-void GlfwAppWindow::main_loop() {
 	// this prevents issues if callbacks happen pre-init
 	glfwSetMouseButtonCallback(_window, &glfw_mouse_callback);
 	glfwSetCursorPosCallback(_window, &glfw_mouse_move_callback);

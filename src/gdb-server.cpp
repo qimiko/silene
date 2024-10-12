@@ -347,7 +347,7 @@ bool GdbServer::dispatch_command(const std::string_view& command) {
 				length = memory_max - offset;
 			}
 
-			auto bytes_begin = this->_memory->read_bytes<std::uint8_t>(offset);
+			auto bytes_begin = this->_memory.read_bytes<std::uint8_t>(offset);
 			auto str = to_hex_string({bytes_begin, length});
 
 			this->send_message(str);
@@ -407,8 +407,8 @@ bool GdbServer::dispatch_command(const std::string_view& command) {
 				return false;
 			}
 
-			auto original = this->_memory->read_halfword(offset);
-			this->_memory->write_halfword(offset, 0xbe00);
+			auto original = this->_memory.read_halfword(offset);
+			this->_memory.write_halfword(offset, 0xbe00);
 
 			_sw_breakpoints[offset] = original;
 
@@ -431,7 +431,7 @@ bool GdbServer::dispatch_command(const std::string_view& command) {
 			}
 
 			auto original = _sw_breakpoints.at(offset);
-			this->_memory->write_halfword(offset, original);
+			this->_memory.write_halfword(offset, original);
 
 			this->send_message("OK");
 			return true;

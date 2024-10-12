@@ -41,7 +41,7 @@ private:
 
 	std::unordered_map<std::uint32_t, std::uint32_t> _sw_breakpoints{};
 
-	std::shared_ptr<PagedMemory> _memory{nullptr};
+	PagedMemory& _memory;
 	std::shared_ptr<Dynarmic::A32::Jit> _cpu{nullptr};
 
 	void send_halt_response();
@@ -67,7 +67,7 @@ private:
 
 public:
 
-	GdbServer(std::shared_ptr<PagedMemory> memory, std::shared_ptr<Dynarmic::A32::Jit> cpu) : _memory{memory}, _cpu{cpu} {}
+	GdbServer(PagedMemory& memory, std::shared_ptr<Dynarmic::A32::Jit> cpu) : _memory{memory}, _cpu{cpu} {}
 
 	/**
 	 * creates the server and blocks execution until a client is connected

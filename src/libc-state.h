@@ -8,10 +8,8 @@
 
 #include <spdlog/spdlog.h>
 
-#include "paged-memory.hpp"
-#include "syscall-handler.hpp"
-#include "syscall-translator.hpp"
-#include "environment.h"
+class PagedMemory;
+class StateHolder;
 
 class LibcState {
 	struct StaticDestructor {
@@ -19,7 +17,7 @@ class LibcState {
 		std::uint32_t data;
 	};
 
-	std::shared_ptr<PagedMemory> _memory{nullptr};
+	PagedMemory& _memory;
 	std::vector<StaticDestructor> _destructors{};
 
 	std::unordered_map<std::string, std::string> _exposed_files{};
@@ -35,7 +33,7 @@ public:
 
 	void register_destructor(StaticDestructor destructor);
 
-	void pre_init(Environment& environment);
+	void pre_init(const StateHolder& environment);
 
 	std::uint32_t get_strtok_buffer() const;
 	void set_strtok_buffer(std::uint32_t);
@@ -48,7 +46,7 @@ public:
 
 	void expose_file(std::string emu_name, std::string real_name);
 
-	LibcState(std::shared_ptr<PagedMemory> memory) : _memory(memory) {}
+	LibcState(PagedMemory& memory) : _memory(memory) {}
 };
 
 #endif

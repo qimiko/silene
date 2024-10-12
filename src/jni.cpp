@@ -1,4 +1,7 @@
 #include "jni.h"
+#include "syscall-translator.hpp"
+#include "syscall-handler.hpp"
+#include "libc-state.h"
 
 #include "jni/base-robtop-activity.h"
 #include "jni/cocos-activity.h"
@@ -6,7 +9,7 @@
 #define REGISTER_STATIC(CLASS, SIGNATURE, NAME) \
 	register_static(CLASS, SIGNATURE, &SyscallTranslator::translate_wrap<&jni_##NAME>)
 
-void JniState::pre_init(Environment& env) {
+void JniState::pre_init(const StateHolder& env) {
 	JavaVM vm;
 
 	vm.ptr_attachCurrentThread = REGISTER_STUB(env, attachCurrentThread);
@@ -28,35 +31,35 @@ void JniState::pre_init(Environment& env) {
 
 	// write after registering symbols so memory is ordered more cleanly
 
-	auto vm_write_addr = this->_memory->get_next_addr();
+	auto vm_write_addr = this->_memory.get_next_addr();
 
 	if (vm_write_addr & 1) {
 		// if the returned pointer is thumbed, increment by 1 to remove it
 		vm_write_addr++;
-		this->_memory->allocate(1);
+		this->_memory.allocate(1);
 	}
 
 	vm.ptr_self = vm_write_addr;
 
-	this->_memory->copy(vm_write_addr, &vm, sizeof(JavaVM));
+	this->_memory.copy(vm_write_addr, &vm, sizeof(JavaVM));
 	this->_vm_ptr = vm_write_addr;
 
-	this->_memory->allocate(sizeof(JavaVM));
+	this->_memory.allocate(sizeof(JavaVM));
 
-	auto env_write_addr = this->_memory->get_next_addr();
+	auto env_write_addr = this->_memory.get_next_addr();
 
 	if (env_write_addr & 1) {
 		// if the returned pointer is thumbed, increment by 1 to remove it
 		env_write_addr++;
-		this->_memory->allocate(1);
+		this->_memory.allocate(1);
 	}
 
 	jni_env.ptr_self = env_write_addr;
 
-	this->_memory->copy(env_write_addr, &jni_env, sizeof(JNIEnv));
+	this->_memory.copy(env_write_addr, &jni_env, sizeof(JNIEnv));
 	this->_env_ptr = env_write_addr;
 
-	this->_memory->allocate(sizeof(JNIEnv));
+	this->_memory.allocate(sizeof(JNIEnv));
 
 	REGISTER_STATIC("com/customRobTop/BaseRobTopActivity", "getUserID;()Ljava/lang/String;", get_user_id);
 	REGISTER_STATIC("org/cocos2dx/lib/Cocos2dxActivity", "showMessageBox;(Ljava/lang/String;Ljava/lang/String;)V", show_message_box);
@@ -71,7 +74,7 @@ std::uint32_t JniState::get_env_ptr() const {
 }
 
 std::uint32_t JniState::emu_newStringUTF(Environment& env, std::uint32_t java_env, std::uint32_t string_ptr) {
-	auto str = env.memory_manager()->read_bytes<char>(string_ptr);
+	auto str = env.memory_manager().read_bytes<char>(string_ptr);
 	return env.jni().create_string_ref(str);
 }
 
@@ -82,10 +85,10 @@ std::uint32_t JniState::emu_getStringUTFChars(Environment& env, std::uint32_t ja
 
 		// add a null byte
 		auto ptr = env.libc().allocate_memory(ref.length() + 1, true);
-		env.memory_manager()->copy(ptr, ref.data(), ref.length());
+		env.memory_manager().copy(ptr, ref.data(), ref.length());
 
 		if (is_copy_ptr != 0) {
-			env.memory_manager()->write_byte(is_copy_ptr, 1);
+			env.memory_manager().write_byte(is_copy_ptr, 1);
 		}
 
 		return ptr;
@@ -97,7 +100,7 @@ std::uint32_t JniState::emu_getStringUTFChars(Environment& env, std::uint32_t ja
 
 std::uint32_t JniState::emu_getEnv(Environment& env, std::uint32_t java_env, std::uint32_t out_ptr, std::uint32_t version) {
 	auto env_ptr = env.jni().get_env_ptr();
-	env.memory_manager()->write_word(out_ptr, env_ptr);
+	env.memory_manager().write_word(out_ptr, env_ptr);
 
 	return 0;
 }
@@ -108,7 +111,7 @@ std::uint32_t JniState::emu_attachCurrentThread(Environment& env, std::uint32_t 
 }
 
 std::uint32_t JniState::emu_findClass(Environment& env, std::uint32_t java_env, std::uint32_t name_ptr) {
-	auto class_name = env.memory_manager()->read_bytes<char>(name_ptr);
+	auto class_name = env.memory_manager().read_bytes<char>(name_ptr);
 
 	auto& jni = env.jni();
 	if (auto jclass = jni._class_name_mapping.find(class_name); jclass != jni._class_name_mapping.end()) {
@@ -138,8 +141,8 @@ JniState::StaticJavaClass::JniFunction JniState::get_fn(std::uint32_t class_id, 
 }
 
 std::uint32_t JniState::emu_getStaticMethodID(Environment& env, std::uint32_t java_env, std::uint32_t class_ptr, std::uint32_t name_ptr, std::uint32_t signature_ptr) {
-	auto method_name = env.memory_manager()->read_bytes<char>(name_ptr);
-	auto method_signature = env.memory_manager()->read_bytes<char>(signature_ptr);
+	auto method_name = env.memory_manager().read_bytes<char>(name_ptr);
+	auto method_signature = env.memory_manager().read_bytes<char>(signature_ptr);
 
 	auto& jni = env.jni();
 	if (auto jclass = jni._class_mapping.find(class_ptr); jclass != jni._class_mapping.end()) {
@@ -168,11 +171,11 @@ std::uint32_t JniState::create_string_ref(const std::string_view& str) {
 }
 
 std::uint32_t JniState::create_ref(JniState::RefType x) {
-	auto addr = this->_memory->get_next_word_addr();
-	this->_memory->allocate(4);
+	auto addr = this->_memory.get_next_word_addr();
+	this->_memory.allocate(4);
 
 	// write itself for safekeeping
-	this->_memory->write_word(addr, 0xcbfbfbdb);
+	this->_memory.write_word(addr, 0xcbfbfbdb);
 
 	this->_object_refs[addr] = x;
 
@@ -201,7 +204,7 @@ void JniState::emu_getIntArrayRegion(Environment& env, std::uint32_t java_env, s
 	auto& ref_v = env.jni().get_ref_value(jarray);
 	auto& ref = std::get<std::vector<int>>(ref_v);
 
-	auto buf = env.memory_manager()->read_bytes<std::int32_t>(buf_ptr);
+	auto buf = env.memory_manager().read_bytes<std::int32_t>(buf_ptr);
 
 	std::copy(ref.begin() + start, ref.begin() + start + len, buf);
 }
@@ -210,7 +213,7 @@ void JniState::emu_getFloatArrayRegion(Environment& env, std::uint32_t java_env,
 	auto& ref_v = env.jni().get_ref_value(jarray);
 	auto& ref = std::get<std::vector<float>>(ref_v);
 
-	auto buf = env.memory_manager()->read_bytes<float>(buf_ptr);
+	auto buf = env.memory_manager().read_bytes<float>(buf_ptr);
 
 	std::copy(ref.begin() + start, ref.begin() + start + len, buf);
 }

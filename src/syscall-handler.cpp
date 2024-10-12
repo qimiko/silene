@@ -1,5 +1,10 @@
 #include "syscall-handler.hpp"
 
+#include <spdlog/spdlog.h>
+
+#include "paged-memory.hpp"
+#include "environment.h"
+
 void SyscallHandler::on_symbol_call(Environment& env) {
 	// resolve symbol
 	auto pc = env.current_cpu()->Regs()[15];
@@ -32,18 +37,18 @@ void SyscallHandler::register_kernel_fn(std::uint32_t call, HandlerFunction fn) 
 }
 
 std::uint32_t SyscallHandler::create_stub_fn(HandlerFunction fn) {
-	auto write_addr = this->_memory->get_next_addr();
+	auto write_addr = this->_memory.get_next_addr();
 
 	if (write_addr & 1) {
 		// if the returned pointer is thumbed, increment by 1 to remove it
 		write_addr++;
-		this->_memory->allocate(1);
+		this->_memory.allocate(1);
 	}
 
 	// allocate space for a double
-	this->_memory->allocate(4);
-	this->_memory->write_halfword(write_addr, 0xdf02);
-	this->_memory->write_halfword(write_addr + 2, 0x4770);
+	this->_memory.allocate(4);
+	this->_memory.write_halfword(write_addr, 0xdf02);
+	this->_memory.write_halfword(write_addr + 2, 0x4770);
 
 	// thumb bit!
 	this->fns[write_addr + 2] = fn;
@@ -56,8 +61,8 @@ std::uint32_t SyscallHandler::replace_fn(std::uint32_t addr, HandlerFunction fn)
 		// write thumb stub
 		addr--;
 
-		this->_memory->write_halfword(addr, 0xdf02);
-		this->_memory->write_halfword(addr + 2, 0x4770);
+		this->_memory.write_halfword(addr, 0xdf02);
+		this->_memory.write_halfword(addr + 2, 0x4770);
 
 		// thumb bit!
 		this->fns[addr + 2] = fn;
@@ -66,8 +71,8 @@ std::uint32_t SyscallHandler::replace_fn(std::uint32_t addr, HandlerFunction fn)
 	}
 
 	// non thumb
-	this->_memory->write_word(addr, 0xef000002);
-	this->_memory->write_word(addr, 0xe12fff1e);
+	this->_memory.write_word(addr, 0xef000002);
+	this->_memory.write_word(addr, 0xe12fff1e);
 	this->fns[addr + 4] = fn;
 
 	return addr;

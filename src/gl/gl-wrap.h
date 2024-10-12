@@ -22,7 +22,7 @@ std::uint32_t emu_glGetString(Environment& env, std::uint32_t name) {
 	auto r_len = strlen(r);
 	auto r_ptr = env.libc().allocate_memory(r_len + 1);
 
-	auto str = env.memory_manager()->read_bytes<char>(r_ptr);
+	auto str = env.memory_manager().read_bytes<char>(r_ptr);
 	std::memcpy(str, r, r_len + 1);
 
 	spdlog::trace("glGetString(name: {}) -> {}", name, glGetError());
@@ -31,7 +31,7 @@ std::uint32_t emu_glGetString(Environment& env, std::uint32_t name) {
 }
 
 void emu_glGetIntegerv(Environment& env, std::uint32_t name, std::uint32_t data_ptr) {
-	auto data = env.memory_manager()->read_bytes<int>(data_ptr);
+	auto data = env.memory_manager().read_bytes<int>(data_ptr);
 	if (data_ptr == 0) {
 		data = nullptr;
 	}
@@ -41,7 +41,7 @@ void emu_glGetIntegerv(Environment& env, std::uint32_t name, std::uint32_t data_
 }
 
 void emu_glGetFloatv(Environment& env, std::uint32_t name, std::uint32_t data_ptr) {
-	auto data = env.memory_manager()->read_bytes<float>(data_ptr);
+	auto data = env.memory_manager().read_bytes<float>(data_ptr);
 	if (data_ptr == 0) {
 		data = nullptr;
 	}
@@ -68,8 +68,8 @@ void emu_glShaderSource(Environment& env, std::uint32_t shader, std::uint32_t co
 	// this one's good, actually
 	// we have to translate the 2d array that is str_ptrs
 
-	auto str_ptr = env.memory_manager()->read_bytes<int>(str_ptrs);
-	auto len = env.memory_manager()->read_bytes<int>(len_ptr);
+	auto str_ptr = env.memory_manager().read_bytes<int>(str_ptrs);
+	auto len = env.memory_manager().read_bytes<int>(len_ptr);
 
 	if (len_ptr == 0) {
 		len = nullptr;
@@ -79,7 +79,7 @@ void emu_glShaderSource(Environment& env, std::uint32_t shader, std::uint32_t co
 	str_ptr_tr.reserve(count);
 
 	for (auto i = 0u; i < count; i++) {
-		auto ptr = env.memory_manager()->read_bytes<char>(str_ptr[i]);
+		auto ptr = env.memory_manager().read_bytes<char>(str_ptr[i]);
 
 #ifndef SILENE_USE_EGL
 		// desktop opengl doesn't support precision
@@ -97,8 +97,8 @@ void emu_glShaderSource(Environment& env, std::uint32_t shader, std::uint32_t co
 }
 
 void emu_glGetShaderSource(Environment& env, std::uint32_t shader, std::uint32_t buf_size, std::uint32_t length_ptr, std::uint32_t source_ptr) {
-	auto length = env.memory_manager()->read_bytes<std::int32_t>(length_ptr);
-	auto source = env.memory_manager()->read_bytes<char>(source_ptr);
+	auto length = env.memory_manager().read_bytes<std::int32_t>(length_ptr);
+	auto source = env.memory_manager().read_bytes<char>(source_ptr);
 
 	if (length_ptr == 0) {
 		length = nullptr;
@@ -116,7 +116,7 @@ void emu_glCompileShader(Environment& env, std::uint32_t shader) {
 }
 
 void emu_glGetShaderiv(Environment& env, std::uint32_t shader, std::uint32_t name, std::uint32_t data_ptr) {
-	auto data = env.memory_manager()->read_bytes<int>(data_ptr);
+	auto data = env.memory_manager().read_bytes<int>(data_ptr);
 	if (data_ptr == 0) {
 		data = nullptr;
 	}
@@ -127,12 +127,12 @@ void emu_glGetShaderiv(Environment& env, std::uint32_t shader, std::uint32_t nam
 }
 
 void emu_glGetShaderInfoLog(Environment& env, std::uint32_t shader, std::uint32_t max_length, std::uint32_t length_ptr, std::uint32_t info_log_ptr) {
-	auto length = env.memory_manager()->read_bytes<int>(length_ptr);
+	auto length = env.memory_manager().read_bytes<int>(length_ptr);
 	if (length_ptr == 0) {
 		length = nullptr;
 	}
 
-	auto info_log = env.memory_manager()->read_bytes<char>(info_log_ptr);
+	auto info_log = env.memory_manager().read_bytes<char>(info_log_ptr);
 
 	glGetShaderInfoLog(shader, max_length, length, info_log);
 
@@ -152,7 +152,7 @@ void emu_glAttachShader(Environment& env, std::uint32_t program, std::uint32_t s
 }
 
 void emu_glBindAttribLocation(Environment& env, std::uint32_t program, std::uint32_t index, std::uint32_t name_ptr) {
-	auto name = env.memory_manager()->read_bytes<char>(name_ptr);
+	auto name = env.memory_manager().read_bytes<char>(name_ptr);
 	if (name_ptr == 0) {
 		name = nullptr;
 	}
@@ -175,14 +175,14 @@ void emu_glDeleteShader(Environment& env, std::uint32_t shader) {
 }
 
 void emu_glDeleteBuffers(Environment& env, std::uint32_t n, std::uint32_t buffers_ptr) {
-	auto buffers = env.memory_manager()->read_bytes<std::uint32_t>(buffers_ptr);
+	auto buffers = env.memory_manager().read_bytes<std::uint32_t>(buffers_ptr);
 	glDeleteBuffers(n, buffers);
 
 	spdlog::trace("glDeleteBuffers(n: {}, buffers: {:#x}) -> {}", n, buffers_ptr, glGetError());
 }
 
 std::int32_t emu_glGetUniformLocation(Environment& env, std::uint32_t program, std::uint32_t name_ptr) {
-	auto name = env.memory_manager()->read_bytes<char>(name_ptr);
+	auto name = env.memory_manager().read_bytes<char>(name_ptr);
 	return glGetUniformLocation(program, name);
 
 	spdlog::trace("glGetUniformLocation(program: {}, name: {}) -> {}", program, name, glGetError());
@@ -205,12 +205,12 @@ void emu_glUniform1i(Environment& env, std::int32_t location, std::int32_t v0) {
 }
 
 void emu_glUniform4fv(Environment& env, std::int32_t location, std::uint32_t count, std::uint32_t value_ptr) {
-	auto value = env.memory_manager()->read_bytes<float>(value_ptr);
+	auto value = env.memory_manager().read_bytes<float>(value_ptr);
 	glUniform4fv(location, count, value);
 }
 
 void emu_glUniformMatrix4fv(Environment& env, std::int32_t location, std::uint32_t count, bool transpose, std::uint32_t value_ptr) {
-	auto value = env.memory_manager()->read_bytes<float>(value_ptr);
+	auto value = env.memory_manager().read_bytes<float>(value_ptr);
 	glUniformMatrix4fv(location, count, transpose, value);
 }
 
@@ -225,7 +225,7 @@ void emu_glBindBuffer(Environment& env, std::uint32_t target, std::uint32_t buff
 }
 
 void emu_glBufferData(Environment& env, std::uint32_t target, std::uint32_t size, std::uint32_t data_ptr, std::uint32_t usage) {
-	auto data = env.memory_manager()->read_bytes<void>(data_ptr);
+	auto data = env.memory_manager().read_bytes<void>(data_ptr);
 	if (data_ptr == 0) {
 		data = nullptr;
 	}
@@ -252,7 +252,7 @@ void emu_glActiveTexture(Environment& env, std::uint32_t texture) {
 }
 
 void emu_glGenTextures(Environment& env, std::uint32_t n, std::uint32_t textures_ptr) {
-	auto textures = env.memory_manager()->read_bytes<std::uint32_t>(textures_ptr);
+	auto textures = env.memory_manager().read_bytes<std::uint32_t>(textures_ptr);
 	if (textures_ptr == 0) {
 		textures = nullptr;
 	}
@@ -263,7 +263,7 @@ void emu_glGenTextures(Environment& env, std::uint32_t n, std::uint32_t textures
 }
 
 void emu_glDeleteTextures(Environment& env, std::uint32_t n, std::uint32_t textures_ptr) {
-	auto textures = env.memory_manager()->read_bytes<std::uint32_t>(textures_ptr);
+	auto textures = env.memory_manager().read_bytes<std::uint32_t>(textures_ptr);
 	if (textures_ptr == 0) {
 		textures = nullptr;
 	}
@@ -272,7 +272,7 @@ void emu_glDeleteTextures(Environment& env, std::uint32_t n, std::uint32_t textu
 }
 
 void emu_glGenBuffers(Environment& env, std::uint32_t n, std::uint32_t buffers_ptr) {
-	auto buffers = env.memory_manager()->read_bytes<std::uint32_t>(buffers_ptr);
+	auto buffers = env.memory_manager().read_bytes<std::uint32_t>(buffers_ptr);
 	if (buffers_ptr == 0) {
 		buffers = nullptr;
 	}
@@ -311,7 +311,7 @@ void emu_glViewport(Environment& env, std::int32_t x, std::int32_t y, std::uint3
 
 void emu_glTexImage2D(Environment& env, std::uint32_t target, std::int32_t level, std::int32_t internalformat, std::uint32_t width, std::uint32_t height, std::int32_t border, std::uint32_t format, std::uint32_t type, std::uint32_t data_ptr) {
 	// is this a 2d array?
-	auto data = env.memory_manager()->read_bytes<void>(data_ptr);
+	auto data = env.memory_manager().read_bytes<void>(data_ptr);
 	if (data_ptr == 0) {
 		data = nullptr;
 	}
@@ -332,7 +332,7 @@ void emu_glClear(Environment& env, std::uint32_t mask) {
 }
 
 void emu_glDrawElements(Environment& env, std::uint32_t mode, std::uint32_t count, std::uint32_t type, std::uint32_t indices_ptr) {
-	auto indices = env.memory_manager()->read_bytes<void>(indices_ptr);
+	auto indices = env.memory_manager().read_bytes<void>(indices_ptr);
 	if (indices_ptr == 0) {
 		indices = nullptr;
 	}
@@ -343,7 +343,7 @@ void emu_glDrawElements(Environment& env, std::uint32_t mode, std::uint32_t coun
 }
 
 void emu_glBufferSubData(Environment& env, std::uint32_t target, std::uint32_t offset, std::int32_t size, std::uint32_t data_ptr) {
-	auto data = env.memory_manager()->read_bytes<void>(data_ptr);
+	auto data = env.memory_manager().read_bytes<void>(data_ptr);
 	if (data_ptr == 0) {
 		data = nullptr;
 	}
@@ -362,7 +362,7 @@ void emu_glVertexAttribPointer(Environment& env, std::uint32_t index, std::int32
 	if (binding) {
 		pointer = reinterpret_cast<void*>(pointer_ptr);
 	} else if (pointer_ptr != 0) {
-		pointer = env.memory_manager()->read_bytes<void>(pointer_ptr);
+		pointer = env.memory_manager().read_bytes<void>(pointer_ptr);
 	}
 
 	glVertexAttribPointer(index, size, type, normalized, stride, pointer);
@@ -401,7 +401,7 @@ void emu_glFramebufferTexture2D(Environment& env, std::uint32_t target, std::uin
 }
 
 void emu_glGenRenderbuffers(Environment& env, int32_t n, uint32_t renderbuffers_ptr) {
-	auto renderbuffers = env.memory_manager()->read_bytes<std::uint32_t>(renderbuffers_ptr);
+	auto renderbuffers = env.memory_manager().read_bytes<std::uint32_t>(renderbuffers_ptr);
 	if (renderbuffers_ptr == 0) {
 		renderbuffers = nullptr;
 	}
@@ -414,7 +414,7 @@ void emu_glFramebufferRenderbuffer(Environment& env, std::uint32_t target, std::
 }
 
 void emu_glGenFramebuffers(Environment& env, std::int32_t n, std::uint32_t framebuffers_ptr) {
-	auto framebuffers = env.memory_manager()->read_bytes<std::uint32_t>(framebuffers_ptr);
+	auto framebuffers = env.memory_manager().read_bytes<std::uint32_t>(framebuffers_ptr);
 	if (framebuffers_ptr == 0) {
 		framebuffers = nullptr;
 	}

@@ -18,13 +18,13 @@ int emu_gettimeofday(Environment& env, std::uint32_t tv_ptr, std::uint32_t tz_pt
 	}
 
 	if (tv_ptr != 0) {
-			auto emu_tv = env.memory_manager()->read_bytes<std::int32_t>(tv_ptr);
+			auto emu_tv = env.memory_manager().read_bytes<std::int32_t>(tv_ptr);
 			emu_tv[0] = static_cast<std::int32_t>(tv.tv_sec);
 			emu_tv[1] = static_cast<std::int32_t>(tv.tv_usec);
 	}
 
 	if (tz_ptr != 0) {
-			auto emu_tz = env.memory_manager()->read_bytes<std::int32_t>(tz_ptr);
+			auto emu_tz = env.memory_manager().read_bytes<std::int32_t>(tz_ptr);
 			emu_tz[0] = static_cast<std::int32_t>(tz.tz_minuteswest);
 			emu_tz[1] = static_cast<std::int32_t>(tz.tz_dsttime);
 	}
@@ -36,7 +36,7 @@ std::int32_t emu_time(Environment& env, std::uint32_t arg_ptr) {
 	auto r = static_cast<std::int32_t>(std::time(nullptr));
 
 	if (arg_ptr != 0 && r != -1) {
-		env.memory_manager()->write_word(arg_ptr, r);
+		env.memory_manager().write_word(arg_ptr, r);
 	}
 
 	return r;
@@ -56,9 +56,9 @@ int emu_ftime(Environment& env, std::uint32_t tp_ptr) {
 		ms_tm = 0;
 	}
 
-	env.memory_manager()->write_word(tp_ptr, timeb_time); // timeb.time
-	env.memory_manager()->write_halfword(tp_ptr + 4, ms_tm); // timeb.millitm
-	env.memory_manager()->write_word(tp_ptr + 6, 0); // set timezone/dst to zero
+	env.memory_manager().write_word(tp_ptr, timeb_time); // timeb.time
+	env.memory_manager().write_halfword(tp_ptr + 4, ms_tm); // timeb.millitm
+	env.memory_manager().write_word(tp_ptr + 6, 0); // set timezone/dst to zero
 	return 0;
 }
 
@@ -70,8 +70,8 @@ int emu_clock_gettime(Environment& env, std::int32_t clock_id, std::uint32_t ts_
 		return r;
 	}
 
-	env.memory_manager()->write_word(ts_ptr, static_cast<std::int32_t>(ts.tv_sec));
-	env.memory_manager()->write_word(ts_ptr + 4, static_cast<std::int32_t>(ts.tv_nsec));
+	env.memory_manager().write_word(ts_ptr, static_cast<std::int32_t>(ts.tv_sec));
+	env.memory_manager().write_word(ts_ptr + 4, static_cast<std::int32_t>(ts.tv_nsec));
 
 	return 0;
 }

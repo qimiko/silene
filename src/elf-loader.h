@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <span>
 
 #include "paged-memory.hpp"
 #include "elf.h"
@@ -44,7 +45,7 @@ private:
 		DynamicInfo dynamic;
 	};
 
-	std::shared_ptr<PagedMemory> _memory{nullptr};
+	PagedMemory& _memory;
 	std::uint32_t _load_addr{0};
 
 	std::vector<std::uint32_t> _init_functions{};
@@ -86,7 +87,7 @@ public:
 	 */
 	void add_stub_symbol(std::uint32_t vaddr, const std::string_view& symbol);
 
-	Loader(std::shared_ptr<PagedMemory> memory) : _memory(memory) {}
+	Loader(PagedMemory& memory) : _memory(memory) {}
 };
 
 }

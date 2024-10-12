@@ -27,7 +27,7 @@ void emu_abort(Environment& env) {
 }
 
 std::int32_t emu_strtol(Environment& env, std::uint32_t begin_ptr, std::uint32_t end_ptr, std::int32_t base) {
-	auto begin = env.memory_manager()->read_bytes<char>(begin_ptr);
+	auto begin = env.memory_manager().read_bytes<char>(begin_ptr);
 
 	char* end;
 	auto x = std::strtol(begin, &end, base);
@@ -36,14 +36,14 @@ std::int32_t emu_strtol(Environment& env, std::uint32_t begin_ptr, std::uint32_t
 		auto offs = end - begin;
 		auto emu_end = begin_ptr + offs;
 
-		env.memory_manager()->write_word(end_ptr, emu_end);
+		env.memory_manager().write_word(end_ptr, emu_end);
 	}
 
 	return x;
 }
 
 double emu_strtod(Environment& env, std::uint32_t begin_ptr, std::uint32_t end_ptr) {
-	auto begin = env.memory_manager()->read_bytes<char>(begin_ptr);
+	auto begin = env.memory_manager().read_bytes<char>(begin_ptr);
 
 	char* end;
 	auto x = std::strtod(begin, &end);
@@ -52,14 +52,14 @@ double emu_strtod(Environment& env, std::uint32_t begin_ptr, std::uint32_t end_p
 		auto offs = end - begin;
 		auto emu_end = begin_ptr + offs;
 
-		env.memory_manager()->write_word(end_ptr, emu_end);
+		env.memory_manager().write_word(end_ptr, emu_end);
 	}
 
 	return x;
 }
 
 int emu_atoi(Environment& env, std::uint32_t str_ptr) {
-	auto str = env.memory_manager()->read_bytes<char>(str_ptr);
+	auto str = env.memory_manager().read_bytes<char>(str_ptr);
 	return std::atoi(str);
 }
 

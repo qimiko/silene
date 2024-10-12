@@ -62,7 +62,7 @@ namespace SyscallTranslator {
 				idx++;
 			}
 
-			return env.memory_manager()->read_word(sp_offs);
+			return env.memory_manager().read_word(sp_offs);
 		}
 	}
 
@@ -79,7 +79,7 @@ namespace SyscallTranslator {
 				sp -= 4;
 			}
 
-			env.memory_manager()->write_word(sp, value);
+			env.memory_manager().write_word(sp, value);
 
 			sp -= 4;
 		}

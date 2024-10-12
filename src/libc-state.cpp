@@ -1,5 +1,8 @@
 #include "libc-state.h"
 
+#include "syscall-handler.hpp"
+#include "syscall-translator.hpp"
+
 #include "libc/cxa.h"
 #include "libc/math.h"
 #include "libc/string.h"
@@ -22,19 +25,19 @@
 std::uint32_t LibcState::allocate_memory(std::uint32_t size, bool zero_mem) {
 	// TODO: this implementation is terrible.
 
-	auto next = this->_memory->get_next_addr();
+	auto next = this->_memory.get_next_addr();
 
 	// dword alignment
 	if (next % 8 != 0) {
 		auto next_aligned = ((next / 8) + 1) * 8;
-		this->_memory->allocate(next_aligned - next);
+		this->_memory.allocate(next_aligned - next);
 		next = next_aligned;
 	}
 
-	this->_memory->allocate(size);
+	this->_memory.allocate(size);
 
 	if (zero_mem) {
-		this->_memory->set(next, 0, size);
+		this->_memory.set(next, 0, size);
 	}
 
 	return next;
@@ -46,8 +49,8 @@ void LibcState::free_memory(std::uint32_t vaddr) {
 std::uint32_t LibcState::reallocate_memory(std::uint32_t vaddr, std::uint32_t size) {
 	auto new_ptr = this->allocate_memory(size, false);
 
-	auto src = this->_memory->read_bytes<std::uint8_t>(vaddr);
-	auto dest = this->_memory->read_bytes<std::uint8_t>(new_ptr);
+	auto src = this->_memory.read_bytes<std::uint8_t>(vaddr);
+	auto dest = this->_memory.read_bytes<std::uint8_t>(new_ptr);
 
 	// we should really track memory sizes, this could create issues
 	std::memcpy(dest, src, size);
@@ -78,7 +81,7 @@ std::uint32_t LibcState::open_file(const std::string& filename, const char* mode
 	auto addr = this->allocate_memory(4);
 
 	// write itself for safekeeping
-	this->_memory->write_word(addr, addr);
+	this->_memory.write_word(addr, addr);
 
 	_open_files[addr] = file_ptr;
 	return addr;
@@ -147,7 +150,7 @@ void LibcState::set_strtok_buffer(std::uint32_t x) {
 	this->_strtok_buffer = x;
 }
 
-void LibcState::pre_init(Environment& env) {
+void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, sin);
 	REGISTER_FN(env, sinf);
 	REGISTER_FN(env, cos);
@@ -231,19 +234,19 @@ void LibcState::pre_init(Environment& env) {
 	REGISTER_FN(env, srand48);
 	REGISTER_FN(env, tolower);
 
-	auto ctype_addr = this->_memory->get_next_word_addr();
-	this->_memory->allocate(sizeof(emu__ctype_));
-	this->_memory->copy(ctype_addr, &emu__ctype_, sizeof(emu__ctype_));
+	auto ctype_addr = this->_memory.get_next_word_addr();
+	this->_memory.allocate(sizeof(emu__ctype_));
+	this->_memory.copy(ctype_addr, &emu__ctype_, sizeof(emu__ctype_));
 	env.program_loader().add_stub_symbol(ctype_addr, "_ctype_");
 
-	auto tolower_tab_addr = this->_memory->get_next_word_addr();
-	this->_memory->allocate(sizeof(emu__tolower_tab_));
-	this->_memory->copy(tolower_tab_addr, &emu__tolower_tab_, sizeof(emu__tolower_tab_));
+	auto tolower_tab_addr = this->_memory.get_next_word_addr();
+	this->_memory.allocate(sizeof(emu__tolower_tab_));
+	this->_memory.copy(tolower_tab_addr, &emu__tolower_tab_, sizeof(emu__tolower_tab_));
 	env.program_loader().add_stub_symbol(tolower_tab_addr, "_tolower_tab_");
 
-	auto toupper_tab_addr = this->_memory->get_next_word_addr();
-	this->_memory->allocate(sizeof(emu__toupper_tab_));
-	this->_memory->copy(toupper_tab_addr, &emu__toupper_tab_, sizeof(emu__toupper_tab_));
+	auto toupper_tab_addr = this->_memory.get_next_word_addr();
+	this->_memory.allocate(sizeof(emu__toupper_tab_));
+	this->_memory.copy(toupper_tab_addr, &emu__toupper_tab_, sizeof(emu__toupper_tab_));
 	env.program_loader().add_stub_symbol(toupper_tab_addr, "_toupper_tab_");
 
 	REGISTER_SYSCALL(env, openat, 0x142);

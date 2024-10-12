@@ -1,29 +1,14 @@
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
-#include <iomanip>
-#include <iostream>
-#include <memory>
-#include <set>
-#include <utility>
-#include <vector>
-
-#include <dynarmic/interface/A32/a32.h>
-#include <dynarmic/interface/A32/config.h>
-#include <dynarmic/interface/exclusive_monitor.h>
 
 #include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
 
-#include "android-environment.hpp"
-#include "android-coprocessor.hpp"
+#include "android-application.hpp"
 #include "keybind-manager.hpp"
-#include "paged-memory.hpp"
 #include "elf.h"
-#include "elf-loader.h"
 #include "zip-file.h"
-
-#include "hook/fileutils.h"
 
 #ifdef SILENE_USE_EGL
 #include <GLES2/gl2.h>
@@ -53,68 +38,62 @@ void glfw_mouse_callback(GLFWwindow* window, int button, int action, int mods) {
 		return;
 	}
 
-	if (auto env = reinterpret_cast<AndroidEnvironment*>(glfwGetWindowUserPointer(window)); env != nullptr) {
-		auto jni_env_ptr = env->jni().get_env_ptr();
+	if (auto env = reinterpret_cast<AndroidApplication*>(glfwGetWindowUserPointer(window)); env != nullptr) {
 		double xpos, ypos;
-
 		glfwGetCursorPos(window, &xpos, &ypos);
 
-		if (action == GLFW_PRESS) {
-			env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeTouchesBegin",
-				jni_env_ptr, 0, 1, static_cast<float>(xpos * glfw_scale_x), static_cast<float>(ypos * glfw_scale_y));
-		} else if (action == GLFW_RELEASE) {
-			env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeTouchesEnd",
-				jni_env_ptr, 0, 1, static_cast<float>(xpos * glfw_scale_x), static_cast<float>(ypos * glfw_scale_y));
-		}
+		env->send_touch(action == GLFW_PRESS, {
+			1,
+			static_cast<float>(xpos * glfw_scale_x),
+			static_cast<float>(ypos * glfw_scale_y)
+		});
 	}
 }
 
 void glfw_mouse_move_callback(GLFWwindow* window, double xpos, double ypos) {
-	if (auto env = reinterpret_cast<AndroidEnvironment*>(glfwGetWindowUserPointer(window)); env != nullptr) {
-		auto jni_env_ptr = env->jni().get_env_ptr();
-
-		auto ids = env->jni().create_ref(std::vector{ 1 });
-		auto xs = env->jni().create_ref(std::vector{static_cast<float>(xpos * glfw_scale_x)});
-		auto ys = env->jni().create_ref(std::vector{static_cast<float>(ypos * glfw_scale_y)});
-
-		env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeTouchesMove", jni_env_ptr, 0, ids, xs, ys);
+	if (auto env = reinterpret_cast<AndroidApplication*>(glfwGetWindowUserPointer(window)); env != nullptr) {
+		env->move_touches({{
+			1,
+			static_cast<float>(xpos * glfw_scale_x),
+			static_cast<float>(ypos * glfw_scale_y)
+		}});
 	}
 }
 
 void glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	if (auto env = reinterpret_cast<AndroidEnvironment*>(glfwGetWindowUserPointer(window)); env != nullptr) {
+	if (auto env = reinterpret_cast<AndroidApplication*>(glfwGetWindowUserPointer(window)); env != nullptr) {
 		if (keybind_manager != nullptr) {
-			keybind_manager->handle(key, scancode, action);
+			if (auto touch = keybind_manager->handle(key, scancode, action)) {
+				auto [x, y] = touch.value();
 
-			return;
+				env->send_touch(action == GLFW_PRESS, {
+					1,
+					static_cast<float>(x),
+					static_cast<float>(y)
+				});
+
+				return;
+			}
 		}
 
 		if (action != GLFW_PRESS) {
 			return;
 		}
 
-		auto jni_env_ptr = env->jni().get_env_ptr();
-
-		if (!env->has_symbol("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInsertText") &&
-			!env->has_symbol("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeDeleteBackward")) return;
-
 		auto key_name = glfwGetKeyName(key, scancode);
-		
+
 		switch (key) {
 			case GLFW_KEY_BACKSPACE:
-				env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeDeleteBackward", jni_env_ptr, 0);
+				env->send_ime_delete();
 				break;
 			case GLFW_KEY_ESCAPE:
-				env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeKeyDown", jni_env_ptr, 0, 4 /* AKEYCODE_BACK */);
+				env->send_keydown(4 /* AKEYCODE_BACK */);
 				break;
 			case GLFW_KEY_SPACE:
-				env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInsertText", 
-					jni_env_ptr, 0, env->jni().create_string_ref(" "));
+				env->send_ime_insert(" ");
 				break;
 			default:
-				if (key_name)
-					env->call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInsertText", 
-						jni_env_ptr, 0, env->jni().create_string_ref(key_name));
+				env->send_ime_insert(key_name);
 				break;
 		}
 	}
@@ -161,6 +140,8 @@ int main(int argc, char** argv) {
 		spdlog::set_level(spdlog::level::debug);
 	}
 
+	AndroidApplication application{{enable_debugging, app_resources}};
+
 	ZipFile apk_file{app_apk};
 
 	std::string lib_path;
@@ -178,16 +159,6 @@ int main(int argc, char** argv) {
 	auto main_lib = apk_file.read_file_bytes(lib_path);
 
 	auto elf = Elf::File(std::move(main_lib));
-
-	auto header = elf.header();
-
-	if (
-    header->type != Elf::Type::Shared ||
-		header->machine != Elf::Machine::Armv7
-	) {
-		std::cout << "elf file does not match required parameters" << std::endl;
-		return 1;
-	}
 
 	std::filesystem::path support_path{support_dir};
 
@@ -265,50 +236,27 @@ int main(int argc, char** argv) {
 	ImGui_ImplOpenGL3_Init("#version 120");
 	#endif
 
-	AndroidEnvironment env{};
-	glfwSetWindowUserPointer(window, &env);
+	glfwSetWindowUserPointer(window, &application);
 
 	if (!keybind_file.empty()) {
-		keybind_manager = new KeybindManager(keybind_file, env);
+		keybind_manager = new KeybindManager(keybind_file);
 	}
 
-	auto cp15 = std::make_shared<AndroidCP15>();
-
-	Dynarmic::A32::UserConfig user_config{};
-
-	auto monitor = Dynarmic::ExclusiveMonitor{1};
-	// this feels like a hack..?
-	user_config.processor_id = 0;
-	user_config.global_monitor = &monitor;
-
-	user_config.coprocessors[15] = cp15;
-
-	// user_config.very_verbose_debugging_output = true;
-	user_config.callbacks = &env;
-
-	auto cpu = std::make_shared<Dynarmic::A32::Jit>(user_config);
-	env.set_cpu(cpu);
+	application.init();
 
 	/*
 	env.set_assets_dir(resources_dir);
 	*/
-
-	if (enable_debugging) {
-		env.begin_debugging();
-	}
-
-	env.pre_init();
 
 	/*
 	env.program_loader().map_elf(libc);
 	env.post_load();
 	*/
 
-	env.program_loader().map_elf(zlib);
-	env.post_load();
+	application.load_library(zlib);
+	application.load_library(elf);
 
-	env.program_loader().map_elf(elf);
-	env.post_load();
+	application.finalize_libraries();
 
 	spdlog::info("init fns done");
 
@@ -319,48 +267,22 @@ int main(int argc, char** argv) {
 
 	spdlog::info("beginning JNI init");
 
-	auto jni_env_ptr = env.jni().get_env_ptr();
+	application.init_jni();
 
-	if (env.has_symbol("JNI_OnLoad")) {
-		auto jvm_ptr = env.jni().get_vm_ptr();
-		env.call_symbol<void>("JNI_OnLoad", jvm_ptr);
-	}
+	int width, height;
+	glfwGetFramebufferSize(window, &width, &height);
 
-/*
-	if (auto filedata = env.program_loader().get_symbol_addr("_ZN7cocos2d18CCFileUtilsAndroid11getFileDataEPKcS2_Pm"); filedata != 0) {
-		env.syscall_handler().replace_fn(filedata, &SyscallTranslator::translate_wrap<&hook_CCFileUtils_getFileData>);
-	} else if (auto legacy_filedata = env.program_loader().get_symbol_addr("_ZN7cocos2d11CCFileUtils11getFileDataEPKcS2_Pm"); legacy_filedata != 0) {
-		env.syscall_handler().replace_fn(legacy_filedata, &SyscallTranslator::translate_wrap<&hook_CCFileUtils_getFileData>);
-	}
-*/
-
-	glfwSetMouseButtonCallback(window, &glfw_mouse_callback);
-	glfwSetCursorPosCallback(window, &glfw_mouse_move_callback);
-	glfwSetKeyCallback(window, &glfw_key_callback);
-
-	env.libc().expose_file("/application_resources.apk", app_resources);
-
-	// first arg should be a jstring to the path
-	auto path_string = env.jni().create_string_ref("/application_resources.apk");
-
-	if (env.has_symbol("Java_org_cocos2dx_lib_Cocos2dxActivity_nativeSetPaths")) {
-		// this symbol was used on older versions of cocos (but are otherwise identical)
-		env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxActivity_nativeSetPaths", jni_env_ptr, 0, path_string);
-	} else {
-		env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxHelper_nativeSetApkPath", jni_env_ptr, 0, path_string);
-	}
-
-	env.jni().remove_ref(path_string);
-
-	// last two args are width/height
-
-	auto init_finished = false;
+	application.init_game(width, height);
 
 	auto last_time = glfwGetTime();
 	auto last_update_time = glfwGetTime();
 	auto accumulated_time = 0.0f;
 
 	glfwGetWindowContentScale(window, &glfw_scale_x, &glfw_scale_y);
+
+	glfwSetMouseButtonCallback(window, &glfw_mouse_callback);
+	glfwSetCursorPosCallback(window, &glfw_mouse_move_callback);
+	glfwSetKeyCallback(window, &glfw_key_callback);
 
 	while (!glfwWindowShouldClose(window)) {
 		auto current_time = glfwGetTime();
@@ -383,23 +305,16 @@ int main(int argc, char** argv) {
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		if (!init_finished) {
-			ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always, ImVec2(0.0f, 0.0f));
-			if (ImGui::Begin("Loading Dialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
-				ImGui::Text("Loading...");
-			}
-		} else {
-			ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always, ImVec2(0.0f, 0.0f));
-			if (ImGui::Begin("Info Dialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
-				ImGui::Text("FPS: %.0f", 1.0/update_dt);
+		ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always, ImVec2(0.0f, 0.0f));
+		if (ImGui::Begin("Info Dialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize)) {
+			ImGui::Text("FPS: %.0f", 1.0/update_dt);
 
-				if (show_cursor_pos) {
-					double xpos, ypos;
+			if (show_cursor_pos) {
+				double xpos, ypos;
 
-					glfwGetCursorPos(window, &xpos, &ypos);
+				glfwGetCursorPos(window, &xpos, &ypos);
 
-					ImGui::Text("X: %.0f | Y: %.0f", xpos * glfw_scale_x, ypos * glfw_scale_y);
-				}
+				ImGui::Text("X: %.0f | Y: %.0f", xpos * glfw_scale_x, ypos * glfw_scale_y);
 			}
 		}
 
@@ -407,17 +322,7 @@ int main(int argc, char** argv) {
 
 		ImGui::Render();
 
-		if (init_finished) {
-			env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeRender", jni_env_ptr, 0);
-		} else {
-			int width, height;
-			glfwGetFramebufferSize(window, &width, &height);
-
-			env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInit", jni_env_ptr, 0, width, height);
-			spdlog::info("init finished");
-
-			init_finished = true;
-		}
+		application.draw_frame();
 
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

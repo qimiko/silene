@@ -42,6 +42,8 @@ set(SRC_FILES
 	src/syscall-handler.cpp
 	src/android-environment.cpp
 	src/android-coprocessor.cpp
+	src/android-application.cpp
+	src/application-state.cpp
 	src/zip-file.cpp
 	src/main.cpp
 
@@ -60,6 +62,8 @@ if (NOT SILENE_USE_ANGLE AND NOT SILENE_USE_EGL)
 endif()
 
 add_executable(silene ${SRC_FILES})
+
+set_property(TARGET silene PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 target_compile_options(silene PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
 

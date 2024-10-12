@@ -1,15 +1,12 @@
 package dev.xyze.silene
 
-import android.R.id.message
-import android.content.DialogInterface
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.google.androidgamesdk.GameActivity
 
-
-class MainActivity : GameActivity() {
+class SileneActivity : GameActivity() {
     companion object {
         init {
             System.loadLibrary("silene")

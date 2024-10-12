@@ -10,20 +10,23 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Silene.NoActionBar.Fullscreen"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
-            android:exported="true">
+            android:name=".SileneActivity"
+            android:theme="@style/Theme.Silene.NoActionBar.Fullscreen">
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="silene" />
+        </activity>
+        <activity
+            android:name=".FileSelectActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Silene">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
-            <meta-data
-                android:name="android.app.lib_name"
-                android:value="silene" />
         </activity>
     </application>
 

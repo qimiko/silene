@@ -18,7 +18,11 @@ void android_main(struct android_app* app) {
 	auto android_logger = spdlog::android_logger_mt("android", "Silene");
 	spdlog::set_default_logger(android_logger);
 
-	std::string app_apk = "/";
+	// this is probably the cleanest option rn
+	// but hopefully it can be improved
+	std::filesystem::path internal_data{app->activity->internalDataPath};
+	auto internal_apk = internal_data / "app.apk";
+	std::string app_apk = internal_apk.string();
 
 	AndroidApplication application{{false, app_apk}};
 
@@ -45,7 +49,6 @@ void android_main(struct android_app* app) {
 
 	auto main_lib = apk_file.read_file_bytes(lib_path);
 	auto elf = Elf::File(std::move(main_lib));
-
 
 	auto asset_manager = app->activity->assetManager;
 	auto zlib_asset = AAssetManager_open(asset_manager, "support/libz.so", AASSET_MODE_BUFFER);

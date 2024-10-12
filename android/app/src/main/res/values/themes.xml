@@ -6,4 +6,8 @@
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowBackground">@android:drawable/screen_background_dark</item>
     </style>
+
+    <style name="Theme.Silene" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
+
+    </style>
 </resources>

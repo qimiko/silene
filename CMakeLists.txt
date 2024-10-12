@@ -12,15 +12,13 @@ endif()
 
 option(SILENE_USE_ANGLE "Uses ANGLE instead of the desktop's OpenGL" OFF)
 
+if(NOT DEFINED SILENE_USE_EGL AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
+	set(SILENE_USE_EGL ON)
+endif()
+
 option(SILENE_USE_EGL "Uses OpenGL ES instead of desktop OpenGL, if ANGLE is not enabled" OFF)
 
 include(cmake/CPM.cmake)
-
-CPMAddPackage("gh:qimiko/dynarmic#1f55a37")
-CPMAddPackage("gh:gabime/spdlog@1.14.1")
-CPMAddPackage("gh:CLIUtils/CLI11@2.4.2")
-CPMAddPackage("gh:zlib-ng/minizip-ng#4.0.7")
-CPMAddPackage("gh:ToruNiina/toml11@4.2.0")
 
 CPMAddPackage(
 	NAME imgui
@@ -44,8 +42,6 @@ set(SRC_FILES
 	src/android-coprocessor.cpp
 	src/android-application.cpp
 	src/zip-file.cpp
-	src/glfw-window.cpp
-	src/main.cpp
 
 	${imgui_SOURCE_DIR}/imgui.cpp
 	${imgui_SOURCE_DIR}/imgui_widgets.cpp
@@ -54,18 +50,43 @@ set(SRC_FILES
 	${imgui_SOURCE_DIR}/imgui_demo.cpp
 
 	${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
-	${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
 )
 
-if (NOT SILENE_USE_ANGLE AND NOT SILENE_USE_EGL)
+if(NOT SILENE_USE_ANGLE AND NOT SILENE_USE_EGL)
 	set(SRC_FILES ${SRC_FILES} third_party/src/glad/glad.c)
 endif()
 
-add_executable(silene ${SRC_FILES})
+set(MZ_BZIP2 OFF)
+set(MZ_LZMA OFF)
+set(MZ_ZSTD OFF)
+set(MZ_PKCRYPT OFF)
+set(MZ_WZAES OFF)
+set(MZ_ICONV OFF)
+
+if("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
+	set(MZ_FETCH_LIBS ON)
+
+	add_library(silene SHARED ${SRC_FILES})
+else()
+	set(SRC_FILES ${SRC_FILES}
+		src/glfw-window.cpp
+		src/main.cpp
+
+		${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+	)
+
+	add_executable(silene ${SRC_FILES})
+endif()
 
 set_property(TARGET silene PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 
 target_compile_options(silene PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
+
+CPMAddPackage("gh:qimiko/dynarmic#1f55a37")
+CPMAddPackage("gh:gabime/spdlog@1.14.1")
+CPMAddPackage("gh:CLIUtils/CLI11@2.4.2")
+CPMAddPackage("gh:zlib-ng/minizip-ng#4.0.7")
+CPMAddPackage("gh:ToruNiina/toml11@4.2.0")
 
 target_link_libraries(silene dynarmic)
 target_link_libraries(silene spdlog)
@@ -83,9 +104,13 @@ if (SILENE_USE_ANGLE)
 
 	target_include_directories(silene PRIVATE "${CMAKE_SOURCE_DIR}/third_party/include/angle")
 elseif(SILENE_USE_EGL)
-	find_package(OpenGL REQUIRED COMPONENTS GLES2)
-	target_include_directories(silene PRIVATE OPENGL_EGL_INCLUDE_DIRS)
-	target_link_libraries(silene OpenGL::GLES2)
+	if(NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
+		find_package(OpenGL REQUIRED COMPONENTS GLES2)
+		target_include_directories(silene PRIVATE OPENGL_EGL_INCLUDE_DIRS)
+		target_link_libraries(silene OpenGL::GLES2)
+	else()
+		target_link_libraries(silene GLESv2)
+	endif()
 
 	target_compile_definitions(silene PRIVATE -DIMGUI_IMPL_OPENGL_ES2)
 	target_compile_definitions(silene PRIVATE -DSILENE_USE_EGL)

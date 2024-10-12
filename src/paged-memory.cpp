@@ -111,15 +111,15 @@ std::uint32_t PagedMemory::get_next_word_addr() {
 }
 
 std::uint32_t PagedMemory::get_next_page_aligned_addr() {
-	auto current_page = this->_max_addr / PAGE_SIZE;
-	auto offset = this->_max_addr % PAGE_SIZE;
+	auto current_page = this->_max_addr / EMU_PAGE_SIZE;
+	auto offset = this->_max_addr % EMU_PAGE_SIZE;
 
 	if (offset == 0) {
 		// do not allocate, we ended on a page
 		return this->_max_addr;
 	}
 
-	auto next_addr = PAGE_SIZE * (current_page + 1);
+	auto next_addr = EMU_PAGE_SIZE * (current_page + 1);
 	this->_max_addr = next_addr;
 
 	return next_addr;

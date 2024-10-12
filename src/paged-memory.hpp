@@ -14,7 +14,7 @@
 class PagedMemory {
 private:
 	static constexpr std::uint32_t STACK_SIZE = 1024 * 1024;
-	static constexpr std::uint32_t PAGE_SIZE = 4 * 1024;
+	static constexpr std::uint32_t EMU_PAGE_SIZE = 4 * 1024;
 
 	// have a backing 4gb set of continuous memory
 	// after looking into it, it seems like lazy allocation should take over
@@ -127,7 +127,7 @@ public:
 	std::uint32_t get_next_word_addr();
 
 	/**
-	 * gets the next available page, based on PAGE_SIZE.
+	 * gets the next available page, based on EMU_PAGE_SIZE.
 	 * also should allocate up to this pointer
 	 */
 	std::uint32_t get_next_page_aligned_addr();

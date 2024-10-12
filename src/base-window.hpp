@@ -17,7 +17,6 @@ protected:
 	}
 
 public:
-	virtual std::pair<float, float> framebuffer_size() = 0;
 	virtual bool init() = 0;
 	virtual void main_loop() = 0;
 

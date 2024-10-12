@@ -121,9 +121,6 @@ int main(int argc, char** argv) {
 
 	application.init_jni();
 
-	auto [width, height] = window.framebuffer_size();
-	application.init_game(width, height);
-
 	window.main_loop();
 
 	return 0;

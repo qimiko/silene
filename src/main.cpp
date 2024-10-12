@@ -1,27 +1,13 @@
 #include <cstdint>
 #include <cstdio>
 #include <filesystem>
-#include <iomanip>
-#include <iostream>
-#include <memory>
-#include <set>
-#include <utility>
-#include <vector>
-
-#include <dynarmic/interface/A32/a32.h>
-#include <dynarmic/interface/A32/config.h>
-#include <dynarmic/interface/exclusive_monitor.h>
 
 #include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
 
 #include "android-application.hpp"
-#include "android-environment.hpp"
-#include "android-coprocessor.hpp"
 #include "keybind-manager.hpp"
-#include "paged-memory.hpp"
 #include "elf.h"
-#include "elf-loader.h"
 #include "zip-file.h"
 
 #ifdef SILENE_USE_EGL
@@ -305,11 +291,9 @@ int main(int argc, char** argv) {
 		last_time = current_time;
     accumulated_time += dt;
 
-/*
 		if (accumulated_time < (1.0 / 60.0)) {
 			continue;
 		}
-*/
 
 		auto update_dt = current_time - last_update_time;
     last_update_time = current_time;

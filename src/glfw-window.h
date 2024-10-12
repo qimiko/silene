@@ -12,7 +12,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "base-window.h"
+#include "base-window.hpp"
 #include "keybind-manager.hpp"
 
 class AndroidApplication;
@@ -30,7 +30,6 @@ class GlfwAppWindow : public BaseWindow {
 	float _scale_y{1.0f};
 
 	std::unique_ptr<KeybindManager> _keybind_manager{nullptr};
-	AndroidApplication* _application{nullptr};
 
 	GLFWwindow* _window{nullptr};
 
@@ -42,10 +41,10 @@ class GlfwAppWindow : public BaseWindow {
 public:
 	virtual std::pair<float, float> framebuffer_size() override;
 
-	virtual bool init(AndroidApplication&) override;
+	virtual bool init() override;
 	virtual void main_loop() override;
 
-	GlfwAppWindow(WindowConfig config);
+	GlfwAppWindow(AndroidApplication& app, WindowConfig config);
 };
 
 #endif

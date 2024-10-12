@@ -83,13 +83,13 @@ int main(int argc, char** argv) {
 	auto zlib = Elf::File(zlib_path.string());
 
 	std::filesystem::path apk_path{app_apk};
-	GlfwAppWindow window{{
+	GlfwAppWindow window{application, {
 		.show_cursor_pos = show_cursor_pos,
 		.keybind_file = keybind_file,
 		.title_name = apk_path.filename().string()
 	}};
 
-	if (!window.init(application)) {
+	if (!window.init()) {
 		spdlog::critical("failed to init window");
 		return 1;
 	}

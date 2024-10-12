@@ -20,7 +20,7 @@ void GlfwAppWindow::glfw_mouse_callback(GLFWwindow* window, int button, int acti
 	double xpos, ypos;
 	glfwGetCursorPos(window, &xpos, &ypos);
 
-	env->_application->send_touch(action == GLFW_PRESS, {
+	env->application().send_touch(action == GLFW_PRESS, {
 		1,
 		static_cast<float>(xpos * env->_scale_x),
 		static_cast<float>(ypos * env->_scale_y)
@@ -29,7 +29,7 @@ void GlfwAppWindow::glfw_mouse_callback(GLFWwindow* window, int button, int acti
 
 void GlfwAppWindow::glfw_mouse_move_callback(GLFWwindow* window, double xpos, double ypos) {
 	auto env = reinterpret_cast<GlfwAppWindow*>(glfwGetWindowUserPointer(window));
-	env->_application->move_touches({{
+	env->application().move_touches({{
 		1,
 		static_cast<float>(xpos * env->_scale_x),
 		static_cast<float>(ypos * env->_scale_y)
@@ -42,7 +42,7 @@ void GlfwAppWindow::glfw_key_callback(GLFWwindow* window, int key, int scancode,
 		if (auto touch = keybind_manager->handle(key, scancode, action)) {
 			auto [x, y] = touch.value();
 
-			env->_application->send_touch(action == GLFW_PRESS, {
+			env->application().send_touch(action == GLFW_PRESS, {
 				1,
 				static_cast<float>(x),
 				static_cast<float>(y)
@@ -56,27 +56,30 @@ void GlfwAppWindow::glfw_key_callback(GLFWwindow* window, int key, int scancode,
 		return;
 	}
 
-	auto key_name = glfwGetKeyName(key, scancode);
 
 	switch (key) {
 		case GLFW_KEY_BACKSPACE:
-			env->_application->send_ime_delete();
+			env->application().send_ime_delete();
 			break;
 		case GLFW_KEY_ESCAPE:
-			env->_application->send_keydown(4 /* AKEYCODE_BACK */);
+			env->application().send_keydown(4 /* AKEYCODE_BACK */);
 			break;
 		case GLFW_KEY_SPACE:
-			env->_application->send_ime_insert(" ");
+			env->application().send_ime_insert(" ");
 			break;
-		default:
-			env->_application->send_ime_insert(key_name);
+		default: {
+			auto key_name = glfwGetKeyName(key, scancode);
+			if (key_name == nullptr) {
+				break;
+			}
+
+			env->application().send_ime_insert(key_name);
 			break;
+		}
 	}
 }
 
-bool GlfwAppWindow::init(AndroidApplication& application) {
-	this->_application = &application;
-
+bool GlfwAppWindow::init() {
 	glfwSetErrorCallback(glfw_error_callback);
 
 #if defined(__APPLE__) && defined(SILENE_USE_ANGLE)
@@ -211,7 +214,7 @@ void GlfwAppWindow::main_loop() {
 
 		ImGui::Render();
 
-		_application->draw_frame();
+		application().draw_frame();
 
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -228,4 +231,5 @@ void GlfwAppWindow::main_loop() {
 	_window = nullptr;
 }
 
-GlfwAppWindow::GlfwAppWindow(WindowConfig config) : _config{config} {}
+GlfwAppWindow::GlfwAppWindow(AndroidApplication& app, WindowConfig config)
+	: BaseWindow(app), _config{config} {}

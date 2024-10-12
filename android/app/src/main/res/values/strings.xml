@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Silene</string>
+    <string name="error_dialog_name">Silene Error</string>
+    <string name="error_dialog_accept">OK</string>
 </resources>

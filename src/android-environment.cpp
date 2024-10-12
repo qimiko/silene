@@ -1,5 +1,68 @@
 #include "android-environment.hpp"
 
+std::uint8_t AndroidEnvironment::MemoryRead8(std::uint32_t vaddr) {
+	return this->memory_manager().read_byte(vaddr);
+}
+
+std::uint16_t AndroidEnvironment::MemoryRead16(std::uint32_t vaddr) {
+	return this->memory_manager().read_halfword(vaddr);
+}
+
+std::uint32_t AndroidEnvironment::MemoryRead32(std::uint32_t vaddr) {
+	if (vaddr == 0x0) {
+		spdlog::warn("careful... null read");
+		this->dump_state();
+
+		if (this->_debug_server) {
+			this->_debug_server->report_halt(GdbServer::HaltReason::SegmentationFault);
+		}
+	}
+
+	return this->memory_manager().read_word(vaddr);
+}
+
+std::uint64_t AndroidEnvironment::MemoryRead64(std::uint32_t vaddr) {
+	return this->memory_manager().read_doubleword(vaddr);
+}
+
+void AndroidEnvironment::MemoryWrite8(std::uint32_t vaddr, std::uint8_t value) {
+	this->memory_manager().write_byte(vaddr, value);
+}
+
+void AndroidEnvironment::MemoryWrite16(std::uint32_t vaddr, std::uint16_t value) {
+	this->memory_manager().write_halfword(vaddr, value);
+}
+
+void AndroidEnvironment::MemoryWrite32(std::uint32_t vaddr, std::uint32_t value) {
+	this->memory_manager().write_word(vaddr, value);
+}
+
+void AndroidEnvironment::MemoryWrite64(std::uint32_t vaddr, std::uint64_t value) {
+	this->memory_manager().write_doubleword(vaddr, value);
+}
+
+// todo: obviously this won't work once threads are introduced
+// figure things out when that happens
+bool AndroidEnvironment::MemoryWriteExclusive8(std::uint32_t vaddr, std::uint8_t value, std::uint8_t expected) {
+	this->memory_manager().write_byte(vaddr, value);
+	return true;
+}
+
+bool AndroidEnvironment::MemoryWriteExclusive16(std::uint32_t vaddr, std::uint16_t value, std::uint16_t expected) {
+	this->memory_manager().write_halfword(vaddr, value);
+	return true;
+}
+
+bool AndroidEnvironment::MemoryWriteExclusive32(std::uint32_t vaddr, std::uint32_t value, std::uint32_t expected) {
+	this->memory_manager().write_word(vaddr, value);
+	return true;
+}
+
+bool AndroidEnvironment::MemoryWriteExclusive64(std::uint32_t vaddr, std::uint64_t value, std::uint64_t expected) {
+	this->memory_manager().write_doubleword(vaddr, value);
+	return true;
+}
+
 void AndroidEnvironment::CallSVC(std::uint32_t swi) {
 	spdlog::trace("svc call: {}", swi);
 
@@ -60,41 +123,6 @@ void AndroidEnvironment::ExceptionRaised(std::uint32_t pc, Dynarmic::A32::Except
 	ticks_left = 0;
 }
 
-void AndroidEnvironment::pre_init() {
-	this->_memory->allocate_stack();
-
-	// allocate enough memory for return functions
-	this->_memory->allocate(0xFF);
-
-	// currently nullptr should be null
-	// maybe later add proper null page handling?
-
-	// it should halt the cpu here
-	this->MemoryWrite16(0x10, 0xdf01); // svc #0x1
-
-	// fallback symbol handler
-	this->MemoryWrite16(0x20, 0xdf02); // svc #0x2
-	this->MemoryWrite16(0x22, 0x4770); // bx lr
-	this->_program_loader.set_symbol_fallback_addr(0x21);
-
-	this->_libc.pre_init(*this);
-	this->_jni.pre_init(*this);
-}
-
-void AndroidEnvironment::post_load() {
-	auto init_fns = this->_program_loader.get_init_functions();
-
-	for (const auto& fn : init_fns) {
-		if (fn == 0 || fn == 0xffff'ffff) {
-			continue;
-		}
-
-		this->run_func(fn);
-	}
-
-	this->_program_loader.clear_init_functions();
-}
-
 void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 	// enable thumb mode if lsb is set
 	if (vaddr & 0x1) {
@@ -128,7 +156,7 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 
 		if (Dynarmic::Has(halt_reason, HALT_REASON_HANDLE_SYSCALL)) {
 			try {
-				this->_syscall_handler.on_symbol_call(*this);
+				this->syscall_handler().on_symbol_call(*this);
 			} catch (...) {
 				spdlog::error("unhandled exception in symbol handler");
 				this->dump_state();
@@ -139,7 +167,7 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 		}
 
 		if (Dynarmic::Has(halt_reason, HALT_REASON_KERNEL_SYSCALL)) {
-			this->_syscall_handler.on_kernel_call(*this);
+			this->syscall_handler().on_kernel_call(*this);
 			halt_reason &= ~HALT_REASON_KERNEL_SYSCALL;
 		}
 
@@ -152,7 +180,7 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 		if (Dynarmic::Has(halt_reason, HALT_REASON_ERROR)) {
 			auto regs = _cpu->Regs();
 			auto pc = regs[15];
-			spdlog::warn("error at addr {:#08x}: {:#08x}", pc, _memory->read_word(pc));
+			spdlog::warn("error at addr {:#08x}: {:#08x}", pc, this->memory_manager().read_word(pc));
 
 			// at this point, the user may still want to continue debugging
 			// so let the cpu continue
@@ -190,6 +218,8 @@ void AndroidEnvironment::dump_state() {
 void AndroidEnvironment::begin_debugging() {
 	auto port = 5039;
 
-	this->_debug_server = std::make_unique<GdbServer>(this->_memory, this->_cpu);
+	this->_debug_server = std::make_unique<GdbServer>(this->memory_manager(), this->_cpu);
 	this->_debug_server->begin_connection("0.0.0.0", port);
 }
+
+AndroidEnvironment::AndroidEnvironment(ApplicationState& state) : Environment(state) {}

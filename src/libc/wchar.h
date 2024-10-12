@@ -18,7 +18,7 @@ std::int32_t emu_wctob(Environment& env, std::uint32_t c) {
 }
 
 std::uint32_t emu_wcslen(Environment& env, std::uint32_t str_ptr) {
-	auto str = env.memory_manager()->read_bytes<wchar_t>(str_ptr);
+	auto str = env.memory_manager().read_bytes<wchar_t>(str_ptr);
 
 	return std::wcslen(str);
 }

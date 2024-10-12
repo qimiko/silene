@@ -11,11 +11,11 @@
 #include <type_traits>
 #include <unordered_map>
 
-#include "environment.h"
-#include "paged-memory.hpp"
+class Environment;
+class PagedMemory;
 
 class SyscallHandler {
-	std::shared_ptr<PagedMemory> _memory{nullptr};
+	PagedMemory& _memory;
 
 	using HandlerFunction = void(*)(Environment& env);
 
@@ -43,7 +43,7 @@ public:
 	 */
 	std::uint32_t replace_fn(std::uint32_t addr, HandlerFunction fn);
 
-	SyscallHandler(std::shared_ptr<PagedMemory> memory) : _memory(memory) {}
+	SyscallHandler(PagedMemory& memory) : _memory(memory) {}
 };
 
 #endif

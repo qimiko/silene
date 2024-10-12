@@ -13,7 +13,6 @@
 
 class PagedMemory {
 private:
-
 	static constexpr std::uint32_t STACK_SIZE = 1024 * 1024;
 	static constexpr std::uint32_t PAGE_SIZE = 4 * 1024;
 
@@ -48,6 +47,9 @@ public:
 			throw new std::runtime_error("memory allocation failed :(");
 		}
 	}
+
+	PagedMemory(const PagedMemory&) = delete;
+	PagedMemory& operator=(const PagedMemory&) = delete;
 
 	~PagedMemory() {
 		munmap(this->_backing_memory, MEMORY_MAX);

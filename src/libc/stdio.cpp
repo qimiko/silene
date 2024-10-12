@@ -35,7 +35,7 @@ std::string perform_printf(Environment& env, const std::string& format_str, T& v
 			case 's':
 				if (in_format) {
 					auto ptr = v.template next<std::uint32_t>();
-					auto substr = env.memory_manager()->read_bytes<char>(ptr);
+					auto substr = env.memory_manager().read_bytes<char>(ptr);
 					ss << substr;
 
 					in_format = false;
@@ -113,8 +113,8 @@ std::string perform_printf(Environment& env, const std::string& format_str, T& v
 }
 
 std::uint32_t emu_fopen(Environment& env, std::uint32_t filename_ptr, std::uint32_t mode_ptr) {
-	auto filename = env.memory_manager()->read_bytes<char>(filename_ptr);
-	auto mode = env.memory_manager()->read_bytes<char>(mode_ptr);
+	auto filename = env.memory_manager().read_bytes<char>(filename_ptr);
+	auto mode = env.memory_manager().read_bytes<char>(mode_ptr);
 
 	return env.libc().open_file(filename, mode);
 }
@@ -138,7 +138,7 @@ std::int32_t emu_ftell(Environment& env, std::uint32_t file) {
 }
 
 std::int32_t emu_fread(Environment& env, std::uint32_t buf_ptr, std::uint32_t size, std::uint32_t count, std::uint32_t file_ref) {
-	auto buf = env.memory_manager()->read_bytes<void>(buf_ptr);
+	auto buf = env.memory_manager().read_bytes<void>(buf_ptr);
 	return env.libc().read_file(buf, size, count, file_ref);
 }
 
@@ -148,8 +148,8 @@ std::int32_t emu_fputs(Environment& env, std::uint32_t str_ptr, std::uint32_t st
 }
 
 std::int32_t emu_sprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t format_ptr, Variadic v) {
-	auto output = env.memory_manager()->read_bytes<char>(output_ptr);
-	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
+	auto output = env.memory_manager().read_bytes<char>(output_ptr);
+	auto format = env.memory_manager().read_bytes<char>(format_ptr);
 
 	auto formatted = perform_printf(env, format, v);
 	std::strncpy(output, formatted.c_str(), formatted.size() + 1);
@@ -158,8 +158,8 @@ std::int32_t emu_sprintf(Environment& env, std::uint32_t output_ptr, std::uint32
 }
 
 std::int32_t emu_snprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t output_size, std::uint32_t format_ptr, Variadic v) {
-	auto output = env.memory_manager()->read_bytes<char>(output_ptr);
-	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
+	auto output = env.memory_manager().read_bytes<char>(output_ptr);
+	auto format = env.memory_manager().read_bytes<char>(format_ptr);
 
 	auto formatted = perform_printf(env, format, v);
 	std::strncpy(output, formatted.c_str(), output_size);
@@ -168,8 +168,8 @@ std::int32_t emu_snprintf(Environment& env, std::uint32_t output_ptr, std::uint3
 }
 
 std::int32_t emu_vsprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t format_ptr, VaList va) {
-	auto output = env.memory_manager()->read_bytes<char>(output_ptr);
-	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
+	auto output = env.memory_manager().read_bytes<char>(output_ptr);
+	auto format = env.memory_manager().read_bytes<char>(format_ptr);
 
 	auto formatted = perform_printf(env, format, va);
 	std::strncpy(output, formatted.c_str(), formatted.size() + 1);
@@ -178,8 +178,8 @@ std::int32_t emu_vsprintf(Environment& env, std::uint32_t output_ptr, std::uint3
 }
 
 std::int32_t emu_vsnprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t output_size, std::uint32_t format_ptr, VaList va) {
-	auto output = env.memory_manager()->read_bytes<char>(output_ptr);
-	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
+	auto output = env.memory_manager().read_bytes<char>(output_ptr);
+	auto format = env.memory_manager().read_bytes<char>(format_ptr);
 
 	auto formatted = perform_printf(env, format, va);
 	std::strncpy(output, formatted.c_str(), output_size);
@@ -188,7 +188,7 @@ std::int32_t emu_vsnprintf(Environment& env, std::uint32_t output_ptr, std::uint
 }
 
 std::int32_t emu_fprintf(Environment& env, std::uint32_t output_file, std::uint32_t format_ptr, Variadic v) {
-	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
+	auto format = env.memory_manager().read_bytes<char>(format_ptr);
 
 	auto formatted = perform_printf(env, format, v);
 
@@ -288,7 +288,7 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 
 					if (end_ptr != src_data) {
 						success = true;
-						env.memory_manager()->write_word(next_ptr, std::bit_cast<std::uint32_t>(ret));
+						env.memory_manager().write_word(next_ptr, std::bit_cast<std::uint32_t>(ret));
 						src_data = end_ptr;
 					}
 
@@ -316,22 +316,22 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 						switch (write_size) {
 							case 1: {
 								auto r_byte = static_cast<std::int8_t>(ret);
-								env.memory_manager()->write_byte(next_ptr, std::bit_cast<std::uint8_t>(r_byte));
+								env.memory_manager().write_byte(next_ptr, std::bit_cast<std::uint8_t>(r_byte));
 								break;
 							}
 							case 2: {
 								auto r_hw = static_cast<std::int16_t>(ret);
-								env.memory_manager()->write_halfword(next_ptr, std::bit_cast<std::uint16_t>(r_hw));
+								env.memory_manager().write_halfword(next_ptr, std::bit_cast<std::uint16_t>(r_hw));
 								break;
 							}
 							default:
 							case 4: {
 								auto r_w = static_cast<std::int32_t>(ret);
-								env.memory_manager()->write_word(next_ptr, std::bit_cast<std::uint32_t>(r_w));
+								env.memory_manager().write_word(next_ptr, std::bit_cast<std::uint32_t>(r_w));
 								break;
 							}
 							case 8: {
-								env.memory_manager()->write_doubleword(next_ptr, std::bit_cast<std::uint64_t>(ret));
+								env.memory_manager().write_doubleword(next_ptr, std::bit_cast<std::uint64_t>(ret));
 								break;
 							}
 						}
@@ -348,7 +348,7 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 
 					if (end_ptr != src_data) {
 						success = true;
-						env.memory_manager()->write_word(next_ptr, std::bit_cast<std::uint32_t>(ret));
+						env.memory_manager().write_word(next_ptr, std::bit_cast<std::uint32_t>(ret));
 						src_data = end_ptr;
 					}
 
@@ -362,7 +362,7 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 
 					if (end_ptr != src_data) {
 						success = true;
-						env.memory_manager()->write_word(next_ptr, static_cast<std::uint32_t>(ret));
+						env.memory_manager().write_word(next_ptr, static_cast<std::uint32_t>(ret));
 						src_data = end_ptr;
 					}
 
@@ -386,8 +386,8 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 }
 
 std::int32_t emu_sscanf(Environment& env, std::uint32_t buf_ptr, std::uint32_t format_ptr, Variadic v) {
-	auto buf = env.memory_manager()->read_bytes<char>(buf_ptr);
-	auto format = env.memory_manager()->read_bytes<char>(format_ptr);
+	auto buf = env.memory_manager().read_bytes<char>(buf_ptr);
+	auto format = env.memory_manager().read_bytes<char>(format_ptr);
 
 	return perform_sscanf(env, buf, format, v);
 }

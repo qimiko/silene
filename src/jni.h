@@ -6,12 +6,12 @@
 #include <cstdint>
 #include <unordered_map>
 #include <variant>
+#include <string>
+#include <string_view>
 
-#include "paged-memory.hpp"
-#include "environment.h"
-#include "syscall-handler.hpp"
-#include "libc-state.h"
-#include "syscall-translator.hpp"
+class StateHolder;
+class Environment;
+class PagedMemory;
 
 struct JNIEnv {
 	std::uint32_t ptr_self{0}; // should point to itself
@@ -280,7 +280,7 @@ class JniState {
 		std::uint32_t method_count{1};
 	};
 
-	std::shared_ptr<PagedMemory> _memory{nullptr};
+	PagedMemory& _memory;
 
 	std::uint32_t _vm_ptr{0};
 	std::uint32_t _env_ptr{0};
@@ -315,7 +315,7 @@ class JniState {
 	StaticJavaClass::JniFunction get_fn(std::uint32_t class_id, std::uint32_t method_id) const;
 
 public:
-	void pre_init(Environment& env);
+	void pre_init(const StateHolder& env);
 
 	std::uint32_t get_vm_ptr() const;
 	std::uint32_t get_env_ptr() const;
@@ -345,7 +345,7 @@ public:
 	 */
 	std::uint32_t register_static(std::string class_name, std::string signature, StaticJavaClass::JniFunction fn);
 
-	JniState(std::shared_ptr<PagedMemory> memory) : _memory(memory) {}
+	JniState(PagedMemory& memory) : _memory(memory) {}
 };
 
 #endif

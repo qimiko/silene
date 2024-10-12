@@ -22,7 +22,7 @@ void Elf::Loader::relocate(const Elf::File& elf, LoaderState state, std::uint32_
 	auto rel_size = sizeof(RelocationTableEntry);
 
 	auto addr = state.base_address + table_offset;
-	auto vaddr = this->_memory->read_bytes<RelocationTableEntry>(addr);
+	auto vaddr = this->_memory.read_bytes<RelocationTableEntry>(addr);
 	auto reloc_array = std::span{vaddr, count};
 
 	for (const auto& reloc : reloc_array) {
@@ -43,13 +43,13 @@ void Elf::Loader::relocate(const Elf::File& elf, LoaderState state, std::uint32_
 		if (symbol_idx != 0) {
 			// state.dynamic.string_table_offset;
 			auto symbol_table_addr = state.base_address + state.dynamic.symbol_table_offset;
-			auto symbol_table = this->_memory->read_bytes<SymbolTableEntry>(symbol_table_addr);
+			auto symbol_table = this->_memory.read_bytes<SymbolTableEntry>(symbol_table_addr);
 			auto symbol = symbol_table + symbol_idx;
 
 			auto name_offset = symbol->name;
 			auto string_table_addr = state.base_address + state.dynamic.string_table_offset;
 
-			auto name_str = this->_memory->read_bytes<char>(string_table_addr + name_offset);
+			auto name_str = this->_memory.read_bytes<char>(string_table_addr + name_offset);
 
 			auto symbol_name = std::string(name_str);
 			spdlog::debug("resolve symbol {}", symbol_name);
@@ -71,22 +71,22 @@ void Elf::Loader::relocate(const Elf::File& elf, LoaderState state, std::uint32_
 
 		switch (reloc.type()) {
 			case RelocationType::Abs32: {
-				auto orig_addr = this->_memory->read_word(reloc_addr);
+				auto orig_addr = this->_memory.read_word(reloc_addr);
 				auto offset_addr = orig_addr + sym_addr;
-				this->_memory->write_word(reloc_addr, offset_addr);
+				this->_memory.write_word(reloc_addr, offset_addr);
 				break;
 			}
 			case RelocationType::GlobalData:
 				// will have to determine if something special needs to be done
 				[[fallthrough]];
 			case RelocationType::JumpSlot: {
-				this->_memory->write_word(reloc_addr, sym_addr);
+				this->_memory.write_word(reloc_addr, sym_addr);
 				break;
 			}
 			case RelocationType::Relative: {
-				auto orig_addr = this->_memory->read_word(reloc_addr);
+				auto orig_addr = this->_memory.read_word(reloc_addr);
 				auto offset_addr = orig_addr + state.base_address;
-				this->_memory->write_word(reloc_addr, offset_addr);
+				this->_memory.write_word(reloc_addr, offset_addr);
 				break;
 			}
 			default:
@@ -151,7 +151,7 @@ void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint3
 			case DynamicSectionTag::Hash: {
 				// we will write our own hashing routine
 				// no need for the elf hash table
-				auto nchain = this->_memory->read_word(base_addr + dynamic.value + 4);
+				auto nchain = this->_memory.read_word(base_addr + dynamic.value + 4);
 				info.symbol_table_count = nchain;
 				break;
 			}
@@ -206,7 +206,7 @@ void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint3
 	auto string_table_addr = state.base_address + state.dynamic.string_table_offset;
 
 	auto symbol_table_addr = base_addr + info.symbol_table_offset;
-	auto symbol_table_ptr = this->_memory->read_bytes<SymbolTableEntry>(symbol_table_addr);
+	auto symbol_table_ptr = this->_memory.read_bytes<SymbolTableEntry>(symbol_table_addr);
 	auto symbol_table = std::span{symbol_table_ptr, info.symbol_table_count};
 
 	for (const auto& symbol : symbol_table) {
@@ -220,7 +220,7 @@ void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint3
 		}
 
 		auto name_offset = symbol.name;
-		auto name_str = this->_memory->read_bytes<char>(string_table_addr + name_offset);
+		auto name_str = this->_memory.read_bytes<char>(string_table_addr + name_offset);
 		auto symbol_name = std::string(name_str);
 
 		spdlog::trace("symbol {}: visibility - {:#x}, type - {:#x}, binding - {:#x}, size - {:#x}, value - {:#08x}, shndx - {:#x}",
@@ -266,7 +266,7 @@ void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint3
 
 		spdlog::trace("loading init array: {:#08x} {:#x}", init_array, init_size);
 
-		auto init_start = this->_memory->read_bytes<std::uint32_t>(init_array);
+		auto init_start = this->_memory.read_bytes<std::uint32_t>(init_array);
 		auto init_fns = std::span{init_start, init_size};
 
 		for (const auto& fn_addr : init_fns) {
@@ -296,7 +296,7 @@ std::uint32_t Elf::Loader::map_elf(const Elf::File& elf) {
 
 	// for shared objects, this will be where memory starts
 	// for executables, this should be null (as they are the first thing loaded)
-	auto load_bias = this->_memory->get_next_page_aligned_addr();
+	auto load_bias = this->_memory.get_next_page_aligned_addr();
 	auto reloc_offset = 0u;
 
 	// in ghidra, this ends up being 0x10000 - bias = 0xf000
@@ -327,10 +327,10 @@ std::uint32_t Elf::Loader::map_elf(const Elf::File& elf) {
 		auto start_addr = load_bias + segment.segment_virtual_address;
 
 		// keep our bss safe
-		this->_memory->allocate(segment.segment_memory_size);
+		this->_memory.allocate(segment.segment_memory_size);
 
 		spdlog::trace("copying segment from file+{:#x} to {:#08x}", start_offset, start_addr);
-		this->_memory->copy(start_addr, file_mem + start_offset, length);
+		this->_memory.copy(start_addr, file_mem + start_offset, length);
 	}
 
 	this->link(elf, load_bias, reloc_offset, dynamic_segment);

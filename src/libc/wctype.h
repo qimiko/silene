@@ -8,7 +8,7 @@
 #include "../environment.h"
 
 std::uint32_t emu_wctype(Environment& env, std::uint32_t str_ptr) {
-	auto str = env.memory_manager()->read_bytes<char>(str_ptr);
+	auto str = env.memory_manager().read_bytes<char>(str_ptr);
 
 	return std::wctype(str);
 }

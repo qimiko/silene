@@ -152,7 +152,7 @@ void AndroidApplication::send_ime_insert(std::string data) {
 	}
 
 	auto jni_env_ptr = this->jni().get_env_ptr();
-	auto data_ref = this->jni().create_string_ref(" ");
+	auto data_ref = this->jni().create_string_ref(data);
 	_env.call_symbol<void>("Java_org_cocos2dx_lib_Cocos2dxRenderer_nativeInsertText", jni_env_ptr, 0, data_ref);
 }
 

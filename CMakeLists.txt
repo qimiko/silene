@@ -45,6 +45,7 @@ set(SRC_FILES
 	src/android-application.cpp
 	src/application-state.cpp
 	src/zip-file.cpp
+	src/glfw-window.cpp
 	src/main.cpp
 
 	${imgui_SOURCE_DIR}/imgui.cpp

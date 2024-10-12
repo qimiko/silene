@@ -176,7 +176,7 @@ namespace SyscallTranslator {
 	 * translates an emulator call to a function call
 	 */
 	template <const auto F>
-	void translate_wrap(Environment& env) {
+	inline void translate_wrap(Environment& env) {
 		SyscallTranslator::translate_wrap_helper(F, env);
 	}
 

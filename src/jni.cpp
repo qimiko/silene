@@ -65,14 +65,6 @@ void JniState::pre_init(const StateHolder& env) {
 	REGISTER_STATIC("org/cocos2dx/lib/Cocos2dxActivity", "showMessageBox;(Ljava/lang/String;Ljava/lang/String;)V", show_message_box);
 }
 
-std::uint32_t JniState::get_vm_ptr() const {
-	return this->_vm_ptr;
-}
-
-std::uint32_t JniState::get_env_ptr() const {
-	return this->_env_ptr;
-}
-
 std::uint32_t JniState::emu_newStringUTF(Environment& env, std::uint32_t java_env, std::uint32_t string_ptr) {
 	auto str = env.memory_manager().read_bytes<char>(string_ptr);
 	return env.jni().create_string_ref(str);

@@ -317,8 +317,13 @@ class JniState {
 public:
 	void pre_init(const StateHolder& env);
 
-	std::uint32_t get_vm_ptr() const;
-	std::uint32_t get_env_ptr() const;
+	inline std::uint32_t get_vm_ptr() const {
+		return this->_vm_ptr;
+	}
+
+	inline std::uint32_t get_env_ptr() const {
+		return this->_env_ptr;
+	}
 
 	/**
 	 * removes a stored reference

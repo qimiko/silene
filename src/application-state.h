@@ -28,13 +28,27 @@ private:
 	ApplicationState& _state;
 
 public:
-	PagedMemory& memory_manager() const;
-	Elf::Loader& program_loader() const;
-	SyscallHandler& syscall_handler() const;
-	LibcState& libc() const;
-	JniState& jni() const;
+	inline PagedMemory& memory_manager() const {
+		return this->_state.memory;
+	}
 
-	StateHolder(ApplicationState&);
+	inline Elf::Loader& program_loader() const {
+		return this->_state.program_loader;
+	}
+
+	inline SyscallHandler& syscall_handler() const {
+		return this->_state.syscall_handler;
+	}
+
+	inline LibcState& libc() const {
+		return this->_state.libc;
+	}
+
+	inline JniState& jni() const  {
+		return this->_state.jni;
+	}
+
+	StateHolder(ApplicationState& state) : _state{state} {}
 };
 
 #endif

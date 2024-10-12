@@ -43,7 +43,6 @@ set(SRC_FILES
 	src/android-environment.cpp
 	src/android-coprocessor.cpp
 	src/android-application.cpp
-	src/application-state.cpp
 	src/zip-file.cpp
 	src/glfw-window.cpp
 	src/main.cpp

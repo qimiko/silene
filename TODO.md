@@ -11,7 +11,6 @@ Naturally, these items may change as the progress progresses.
 - [ ] Sound!
   - [ ] Find something that offers the same metering API that FMOD does... maybe [SoLoud](https://solhsa.com/soloud/)
 - [ ] Improve the implementation for the `^(:?v?s?n?|s?n?)printf$` functions and `sscanf`
-- [ ] Android support
 - [ ] `qsort`.
 
 ## Code quality

@@ -13,6 +13,8 @@ class StateHolder;
 class Environment;
 class PagedMemory;
 
+namespace Silene {
+
 struct JNIEnv {
 	std::uint32_t ptr_self{0}; // should point to itself
 	// TODO: provide some way to default initialize that doesn't rely on hardcoding
@@ -351,6 +353,8 @@ public:
 	std::uint32_t register_static(std::string class_name, std::string signature, StaticJavaClass::JniFunction fn);
 
 	JniState(PagedMemory& memory) : _memory(memory) {}
+};
+
 };
 
 #endif

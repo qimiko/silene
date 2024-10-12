@@ -14,7 +14,7 @@ struct ApplicationState {
 	Elf::Loader program_loader;
 	SyscallHandler syscall_handler;
 	LibcState libc;
-	JniState jni;
+	Silene::JniState jni;
 
 	ApplicationState() :
 		memory{}, program_loader{memory}, syscall_handler{memory}, libc{memory}, jni{memory} {}
@@ -44,7 +44,7 @@ public:
 		return this->_state.libc;
 	}
 
-	inline JniState& jni() const  {
+	inline Silene::JniState& jni() const  {
 		return this->_state.jni;
 	}
 

@@ -65,6 +65,12 @@ set(MZ_ICONV OFF)
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
 	set(MZ_FETCH_LIBS ON)
+	set(SRC_FILES ${SRC_FILES}
+		src/android-window.cpp
+		src/android-main.cpp
+
+		${imgui_SOURCE_DIR}/backends/imgui_impl_android.cpp
+	)
 
 	add_library(silene SHARED ${SRC_FILES})
 else()
@@ -138,4 +144,8 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
 	find_package(glfw3 3.3 REQUIRED)
 	target_include_directories(silene PRIVATE ${GLFW_INCLUDE_DIRS})
 	target_link_libraries(silene glfw)
+elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
+	find_package(game-activity REQUIRED CONFIG)
+	target_link_libraries(silene game-activity::game-activity_static EGL GLESv2 android log)
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -u Java_com_google_androidgamesdk_GameActivity_initializeNativeCode")
 endif()

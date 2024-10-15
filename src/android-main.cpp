@@ -44,7 +44,7 @@ void android_main(struct android_app* app) {
 		lib_path = "lib/armeabi/libgame.so"; // pre 1.6 only has armv5
 	} else {
 		spdlog::error("apk is missing library for a supported architecture");
-    std::terminate();
+		std::terminate();
 	}
 
 	auto main_lib = apk_file.read_file_bytes(lib_path);
@@ -54,7 +54,7 @@ void android_main(struct android_app* app) {
 	auto zlib_asset = AAssetManager_open(asset_manager, "support/libz.so", AASSET_MODE_BUFFER);
 	if (zlib_asset == nullptr) {
 		spdlog::error("failed to open zlib from assets");
-    std::terminate();
+		std::terminate();
 	}
 
 	auto zlib_buffer = static_cast<const std::uint8_t*>(AAsset_getBuffer(zlib_asset));

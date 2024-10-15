@@ -67,20 +67,22 @@ void AndroidApplication::init() {
 void AndroidApplication::init_memory() {
 	this->memory_manager().allocate_stack();
 
-	// allocate enough memory for return functions
-	this->memory_manager().allocate(0xFF);
+	// block off the first page for "reasons" and then allocate more space for our returns
+	this->memory_manager().allocate(PagedMemory::EMU_PAGE_SIZE + 0xff);
 
 	// currently nullptr should be null
 	// maybe later add proper null page handling?
+	auto page_offs = PagedMemory::EMU_PAGE_SIZE;
 
 	// it should halt the cpu here
-	this->memory_manager().write_halfword(0x10, 0xdf01); // svc #0x1
+	this->memory_manager().write_halfword(page_offs + 0x10, 0xdf01); // svc #0x1
+	this->program_loader().set_return_stub_addr(page_offs + 0x11);
 
 	// fallback symbol handler
-	this->memory_manager().write_halfword(0x20, 0xdf02); // svc #0x2
-	this->memory_manager().write_halfword(0x22, 0x4770); // bx lr
+	this->memory_manager().write_halfword(page_offs + 0x20, 0xdf02); // svc #0x2
+	this->memory_manager().write_halfword(page_offs + 0x22, 0x4770); // bx lr
 
-	this->program_loader().set_symbol_fallback_addr(0x21);
+	this->program_loader().set_symbol_fallback_addr(page_offs + 0x21);
 
 	this->libc().pre_init(*this);
 	this->jni().pre_init(*this);

@@ -40,6 +40,10 @@ std::uint32_t emu_strcpy(Environment& env, std::uint32_t destination_ptr, std::u
 }
 
 std::uint32_t emu_memcpy(Environment& env, std::uint32_t destination_ptr, std::uint32_t source_ptr, std::uint32_t num) {
+	if (num == 0) {
+		return destination_ptr;
+	}
+
 	auto destination = env.memory_manager().read_bytes<std::uint8_t>(destination_ptr);
 	auto source = env.memory_manager().read_bytes<std::uint8_t>(source_ptr);
 

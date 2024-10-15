@@ -17,6 +17,7 @@
 #include "libc/setjmp.h"
 #include "libc/time.h"
 #include "libc/ctype.h"
+#include "libc/semaphore.h"
 
 #include "kernel/kernel.h"
 
@@ -47,6 +48,10 @@ void LibcState::free_memory(std::uint32_t vaddr) {
 }
 
 std::uint32_t LibcState::reallocate_memory(std::uint32_t vaddr, std::uint32_t size) {
+	if (vaddr == 0) {
+		return this->allocate_memory(size);
+	}
+
 	auto new_ptr = this->allocate_memory(size, false);
 
 	auto src = this->_memory.read_bytes<std::uint8_t>(vaddr);
@@ -183,10 +188,21 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, wctob);
 	REGISTER_FN(env, atoi);
 	REGISTER_FN(env, pthread_key_create);
+	REGISTER_FN(env, pthread_key_delete);
 	REGISTER_FN(env, pthread_once);
+	REGISTER_FN(env, pthread_create);
+	REGISTER_FN(env, pthread_detach);
+	REGISTER_FN(env, pthread_mutex_init);
 	REGISTER_FN(env, pthread_mutex_lock);
+	REGISTER_FN(env, pthread_mutex_destroy);
 	REGISTER_FN(env, pthread_mutex_unlock);
 	REGISTER_FN(env, pthread_cond_broadcast);
+	REGISTER_FN(env, pthread_cond_wait);
+	REGISTER_FN(env, pthread_getspecific);
+	REGISTER_FN(env, pthread_setspecific);
+	REGISTER_FN(env, pthread_exit);
+	REGISTER_FN(env, sem_init);
+	REGISTER_FN(env, sem_post);
 	REGISTER_FN(env, memcpy);
 	REGISTER_FN(env, memmove);
 	REGISTER_FN(env, memchr);

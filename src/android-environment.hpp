@@ -23,7 +23,9 @@
 
 // manages per thread cpu environment
 class AndroidEnvironment final : public Dynarmic::A32::UserCallbacks, public Environment {
-public:
+private:
+	bool validate_pointer_addr(std::uint32_t vaddr);
+
 	static constexpr auto HALT_REASON_FN_END = Dynarmic::HaltReason::UserDefined1;
 	static constexpr auto HALT_REASON_HANDLE_SYSCALL = Dynarmic::HaltReason::UserDefined2;
 	static constexpr auto HALT_REASON_ERROR = Dynarmic::HaltReason::UserDefined3;
@@ -34,6 +36,7 @@ public:
 	std::shared_ptr<Dynarmic::A32::Jit> _cpu{nullptr};
 	std::uint64_t ticks_left = 0;
 
+public:
 	std::uint8_t MemoryRead8(std::uint32_t vaddr) override;
 	std::uint16_t MemoryRead16(std::uint32_t vaddr) override;
 	std::uint32_t MemoryRead32(std::uint32_t vaddr) override;
@@ -76,7 +79,6 @@ public:
 	 * run a function at some address, assuming that all arguments are already setup
 	 */
 	void run_func(std::uint32_t vaddr) override;
-
 
 	template <typename R = void, typename... Args>
 	R call_symbol(const std::string_view& symbol, Args... args) {

@@ -331,7 +331,7 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 								break;
 							}
 							case 8: {
-                                auto r_d = static_cast<std::int64_t>(ret);
+								auto r_d = static_cast<std::int64_t>(ret);
 								env.memory_manager().write_doubleword(next_ptr, std::bit_cast<std::uint64_t>(r_d));
 								break;
 							}

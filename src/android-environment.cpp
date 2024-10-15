@@ -1,64 +1,95 @@
 #include "android-environment.hpp"
 
-std::uint8_t AndroidEnvironment::MemoryRead8(std::uint32_t vaddr) {
-	return this->memory_manager().read_byte(vaddr);
-}
-
-std::uint16_t AndroidEnvironment::MemoryRead16(std::uint32_t vaddr) {
-	return this->memory_manager().read_halfword(vaddr);
-}
-
-std::uint32_t AndroidEnvironment::MemoryRead32(std::uint32_t vaddr) {
-	if (vaddr == 0x0) {
-		spdlog::warn("careful... null read");
+bool AndroidEnvironment::validate_pointer_addr(std::uint32_t vaddr) {
+	if (vaddr < PagedMemory::EMU_PAGE_SIZE) {
+		spdlog::warn("attempted to read value at invalid addr {:#010x}", vaddr);
 		this->dump_state();
 
 		if (this->_debug_server) {
 			this->_debug_server->report_halt(GdbServer::HaltReason::SegmentationFault);
 		}
+
+		// should probably throw an exception here, but nbd ig
+		return false;
 	}
+
+	return true;
+}
+
+std::uint8_t AndroidEnvironment::MemoryRead8(std::uint32_t vaddr) {
+	this->validate_pointer_addr(vaddr);
+
+	return this->memory_manager().read_byte(vaddr);
+}
+
+std::uint16_t AndroidEnvironment::MemoryRead16(std::uint32_t vaddr) {
+	this->validate_pointer_addr(vaddr);
+
+	return this->memory_manager().read_halfword(vaddr);
+}
+
+std::uint32_t AndroidEnvironment::MemoryRead32(std::uint32_t vaddr) {
+	this->validate_pointer_addr(vaddr);
 
 	return this->memory_manager().read_word(vaddr);
 }
 
 std::uint64_t AndroidEnvironment::MemoryRead64(std::uint32_t vaddr) {
+	this->validate_pointer_addr(vaddr);
+
 	return this->memory_manager().read_doubleword(vaddr);
 }
 
 void AndroidEnvironment::MemoryWrite8(std::uint32_t vaddr, std::uint8_t value) {
+	this->validate_pointer_addr(vaddr);
+
 	this->memory_manager().write_byte(vaddr, value);
 }
 
 void AndroidEnvironment::MemoryWrite16(std::uint32_t vaddr, std::uint16_t value) {
+	this->validate_pointer_addr(vaddr);
+
 	this->memory_manager().write_halfword(vaddr, value);
 }
 
 void AndroidEnvironment::MemoryWrite32(std::uint32_t vaddr, std::uint32_t value) {
+	this->validate_pointer_addr(vaddr);
+
 	this->memory_manager().write_word(vaddr, value);
 }
 
 void AndroidEnvironment::MemoryWrite64(std::uint32_t vaddr, std::uint64_t value) {
+	this->validate_pointer_addr(vaddr);
+
 	this->memory_manager().write_doubleword(vaddr, value);
 }
 
 // todo: obviously this won't work once threads are introduced
 // figure things out when that happens
 bool AndroidEnvironment::MemoryWriteExclusive8(std::uint32_t vaddr, std::uint8_t value, std::uint8_t expected) {
+	this->validate_pointer_addr(vaddr);
+
 	this->memory_manager().write_byte(vaddr, value);
 	return true;
 }
 
 bool AndroidEnvironment::MemoryWriteExclusive16(std::uint32_t vaddr, std::uint16_t value, std::uint16_t expected) {
+	this->validate_pointer_addr(vaddr);
+
 	this->memory_manager().write_halfword(vaddr, value);
 	return true;
 }
 
 bool AndroidEnvironment::MemoryWriteExclusive32(std::uint32_t vaddr, std::uint32_t value, std::uint32_t expected) {
+	this->validate_pointer_addr(vaddr);
+
 	this->memory_manager().write_word(vaddr, value);
 	return true;
 }
 
 bool AndroidEnvironment::MemoryWriteExclusive64(std::uint32_t vaddr, std::uint64_t value, std::uint64_t expected) {
+	this->validate_pointer_addr(vaddr);
+
 	this->memory_manager().write_doubleword(vaddr, value);
 	return true;
 }
@@ -137,7 +168,7 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 
 	// stack ptr, return ptr, pc
 	this->_cpu->Regs()[13] = 0xffff'fff0;
-	this->_cpu->Regs()[14] = 0x11;
+	this->_cpu->Regs()[14] = this->program_loader().get_return_stub_addr();
 
 	// strip the thumb bit
 	this->_cpu->Regs()[15] = fn_addr;

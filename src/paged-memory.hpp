@@ -14,7 +14,6 @@
 class PagedMemory {
 private:
 	static constexpr std::uint32_t STACK_SIZE = 1024 * 1024;
-	static constexpr std::uint32_t EMU_PAGE_SIZE = 4 * 1024;
 
 	// have a backing 4gb set of continuous memory
 	// after looking into it, it seems like lazy allocation should take over
@@ -28,6 +27,8 @@ private:
 	std::uint8_t* ptr_to_addr(std::uint32_t vaddr);
 
 public:
+	static constexpr std::uint32_t EMU_PAGE_SIZE = 4 * 1024;
+
 	PagedMemory() {
 		this->_backing_memory = reinterpret_cast<std::uint8_t*>(mmap(
 			nullptr,

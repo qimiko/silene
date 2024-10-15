@@ -40,6 +40,8 @@ void Elf::Loader::relocate(const Elf::File& elf, LoaderState state, std::uint32_
 		// figure out what to do when that becomes necessary...
 		auto sym_addr = this->_symbol_stub_addr;
 
+		auto reloc_addr = state.base_address + reloc.offset;
+
 		if (symbol_idx != 0) {
 			// state.dynamic.string_table_offset;
 			auto symbol_table_addr = state.base_address + state.dynamic.symbol_table_offset;
@@ -59,6 +61,7 @@ void Elf::Loader::relocate(const Elf::File& elf, LoaderState state, std::uint32_
 				// fn returns 0 on failure, don't accept that
 				sym_addr = addr;
 			} else {
+				_undefined_relocs[reloc_addr] = symbol_name;
 				spdlog::warn("missing symbol {}", symbol_name, symbol->info);
 			}
 
@@ -66,8 +69,6 @@ void Elf::Loader::relocate(const Elf::File& elf, LoaderState state, std::uint32_
 		} else {
 			sym_addr = 0;
 		}
-
-		auto reloc_addr = state.base_address + reloc.offset;
 
 		switch (reloc.type()) {
 			case RelocationType::Abs32: {
@@ -361,4 +362,12 @@ std::uint32_t Elf::Loader::get_symbol_addr(const std::string_view& symbol) const
 bool Elf::Loader::has_symbol(const std::string_view& symbol) const {
 	auto symbol_str = std::string(symbol);
 	return this->_loaded_symbols.contains(symbol_str);
+}
+
+std::optional<std::string> Elf::Loader::find_got_entry(std::uint32_t vaddr) const {
+	if (auto entry = this->_undefined_relocs.find(vaddr); entry != this->_undefined_relocs.end()) {
+		return entry->second;
+	}
+
+	return std::nullopt;
 }

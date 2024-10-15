@@ -9,13 +9,20 @@ void SyscallHandler::on_symbol_call(Environment& env) {
 	// resolve symbol
 	auto pc = env.current_cpu()->Regs()[15];
 	auto lr = env.current_cpu()->Regs()[14];
-	spdlog::trace("resolve symbol: pc = {:#08x}, lr = {:#08x}", pc, lr);
+	auto got = env.current_cpu()->Regs()[12];
+
+	spdlog::trace("resolve symbol: pc = {:#08x}, lr = {:#08x}, r12 = {:#08x}", pc, lr, got);
 
 	try {
 		auto fn_ptr = this->fns.at(pc);
 		fn_ptr(env);
 	} catch (const std::out_of_range& e) {
-		spdlog::warn("symbol resolution failed: lr = {:#08x}", lr);
+		auto entry = env.program_loader().find_got_entry(got);
+		if (entry) {
+			spdlog::warn("symbol resolution failed: lr = {:#08x}, sym = {}", lr, *entry);
+		} else {
+			spdlog::warn("symbol resolution failed: lr = {:#08x}, r12 = {:#08x}", lr, got);
+		}
 	}
 }
 

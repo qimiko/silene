@@ -51,8 +51,10 @@ private:
 	std::vector<std::uint32_t> _init_functions{};
 
 	std::unordered_map<std::string, std::uint32_t> _loaded_symbols{};
+	std::unordered_map<std::uint32_t, std::string> _undefined_relocs{};
 
 	std::uint32_t _symbol_stub_addr{0xfdfdfdfd};
+	std::uint32_t _return_stub_addr{0x0};
 
 	std::unordered_map<std::string, std::uint32_t /* vaddr */> _symbol_stubs{};
 
@@ -80,6 +82,16 @@ public:
 	bool has_symbol(const std::string_view& symbol) const;
 
 	void set_symbol_fallback_addr(std::uint32_t vaddr);
+
+	std::uint32_t get_return_stub_addr() const {
+		return this->_return_stub_addr;
+	}
+
+	void set_return_stub_addr(std::uint32_t vaddr) {
+		this->_return_stub_addr = vaddr;
+	}
+
+	std::optional<std::string> find_got_entry(std::uint32_t vaddr) const;
 
 	/**
 	 * adds a stubbed symbol

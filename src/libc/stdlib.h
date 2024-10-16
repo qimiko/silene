@@ -63,6 +63,11 @@ int emu_atoi(Environment& env, std::uint32_t str_ptr) {
 	return std::atoi(str);
 }
 
+double emu_atof(Environment& env, std::uint32_t str_ptr) {
+	auto str = env.memory_manager().read_bytes<char>(str_ptr);
+	return std::atof(str);
+}
+
 std::uint32_t emu_getenv(Environment& env, std::uint32_t name_ptr) {
 	return 0;
 }

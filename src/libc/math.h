@@ -47,6 +47,10 @@ float emu_roundf(Environment& env, float x) {
   return std::roundf(x);
 }
 
+std::int32_t emu_lroundf(Environment& env, float x) {
+  return static_cast<std::int32_t>(std::lroundf(x));
+}
+
 double emu_floor(Environment& env, double x) {
   return std::floor(x);
 }
@@ -75,6 +79,10 @@ double emu_acos(Environment& env, double x) {
   return std::acos(x);
 }
 
+float emu_acosf(Environment& env, float x) {
+  return std::acosf(x);
+}
+
 float emu_fmodf(Environment& env, float x, float y) {
   return std::fmodf(x, y);
 }
@@ -87,8 +95,28 @@ float emu_asinf(Environment& env, float x) {
   return std::asinf(x);
 }
 
+double emu_asinh(Environment& env, double x) {
+  return std::asinh(x);
+}
+
+float emu_asinhf(Environment& env, float x) {
+  return std::asinhf(x);
+}
+
 float emu_tanf(Environment& env, float x) {
   return std::tanf(x);
+}
+
+double emu_tanh(Environment& env, double x) {
+  return std::tanh(x);
+}
+
+float emu_tanhf(Environment& env, float x) {
+  return std::tanhf(x);
+}
+
+int emu___fpclassifyd(Environment& env, double x) {
+  return std::fpclassify(x);
 }
 
 #endif

@@ -122,4 +122,16 @@ std::int32_t emu_tolower(Environment& env, std::int32_t ch) {
 	return std::tolower(ch);
 }
 
+std::int32_t emu_isspace(Environment& env, std::int32_t ch) {
+	return std::isspace(ch);
+}
+
+std::int32_t emu_isalnum(Environment& env, std::int32_t ch) {
+	return std::isalnum(ch);
+}
+
+std::int32_t emu_isalpha(Environment& env, std::int32_t ch) {
+	return std::isalpha(ch);
+}
+
 #endif

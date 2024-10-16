@@ -388,6 +388,14 @@ void emu_glUniform1f(Environment& env, std::int32_t location, float v0) {
 	glUniform1f(location, v0);
 }
 
+void emu_glUniform2f(Environment& env, std::int32_t location, float v0, float v1) {
+	glUniform2f(location, v0, v1);
+}
+
+void emu_glUniform3f(Environment& env, std::int32_t location, float v0, float v1, float v2) {
+	glUniform3f(location, v0, v1, v2);
+}
+
 void emu_glBindRenderbuffer(Environment& env, std::uint32_t target, std::uint32_t renderbuffer) {
 	glBindRenderbuffer(target, renderbuffer);
 }

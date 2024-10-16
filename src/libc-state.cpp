@@ -166,9 +166,11 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, ceil);
 	REGISTER_FN(env, round);
 	REGISTER_FN(env, roundf);
+	REGISTER_FN(env, lroundf);
 	REGISTER_FN(env, atan2);
 	REGISTER_FN(env, atan2f);
 	REGISTER_FN(env, acos);
+	REGISTER_FN(env, acosf);
 	REGISTER_FN(env, floor);
 	REGISTER_FN(env, floorf);
 	REGISTER_FN(env, powf);
@@ -176,7 +178,12 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, fmodf);
 	REGISTER_FN(env, fmod);
 	REGISTER_FN(env, asinf);
+	REGISTER_FN(env, asinh);
+	REGISTER_FN(env, asinhf);
 	REGISTER_FN(env, tanf);
+	REGISTER_FN(env, tanh);
+	REGISTER_FN(env, tanhf);
+	REGISTER_FN(env, __fpclassifyd);
 	REGISTER_FN(env, __cxa_atexit);
 	REGISTER_FN(env, __cxa_finalize);
 	REGISTER_FN(env, __gnu_Unwind_Find_exidx);
@@ -187,6 +194,7 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, wcslen);
 	REGISTER_FN(env, wctob);
 	REGISTER_FN(env, atoi);
+	REGISTER_FN(env, atof);
 	REGISTER_FN(env, pthread_key_create);
 	REGISTER_FN(env, pthread_key_delete);
 	REGISTER_FN(env, pthread_once);
@@ -249,6 +257,9 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, ftime);
 	REGISTER_FN(env, srand48);
 	REGISTER_FN(env, tolower);
+	REGISTER_FN(env, isspace);
+	REGISTER_FN(env, isalnum);
+	REGISTER_FN(env, isalpha);
 
 	auto ctype_addr = this->_memory.get_next_word_addr();
 	this->_memory.allocate(sizeof(emu__ctype_));
@@ -315,6 +326,8 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN_RN(env, emu_glScissor, "glScissor");
 	REGISTER_FN_RN(env, emu_glGetShaderInfoLog, "glGetShaderInfoLog");
 	REGISTER_FN_RN(env, emu_glUniform1f, "glUniform1f");
+	REGISTER_FN_RN(env, emu_glUniform2f, "glUniform2f");
+	REGISTER_FN_RN(env, emu_glUniform3f, "glUniform3f");
 	REGISTER_FN_RN(env, emu_glBindRenderbuffer, "glBindRenderbuffer");
 	REGISTER_FN_RN(env, emu_glBindFramebuffer, "glBindFramebuffer");
 	REGISTER_FN_RN(env, emu_glFramebufferTexture2D, "glFramebufferTexture2D");

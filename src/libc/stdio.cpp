@@ -13,12 +13,16 @@ std::string perform_printf(Environment& env, const std::string& format_str, T& v
 
 	auto str_data = format_str.data();
 	auto in_format = false;
+	auto in_precision = false;
 
 	// world's greatest printf implementation
 	// gd doesn't require a very complicated one, tbh
 
 	std::string format_flags{};
+	std::string precision_flags{};
+
 	std::unordered_set valid_flags{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+	std::unordered_set valid_precision{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
 
 	while (*str_data) {
 		auto c = *str_data;
@@ -29,7 +33,20 @@ std::string perform_printf(Environment& env, const std::string& format_str, T& v
 					in_format = false;
 				} else {
 					format_flags.clear();
+					precision_flags.clear();
+
+					in_precision = false;
 					in_format = true;
+				}
+				break;
+			case 'c':
+				if (in_format) {
+					auto given_char = v.template next<std::int32_t>();
+					ss << static_cast<unsigned char>(given_char);
+
+					in_format = false;
+				} else {
+					ss << c;
 				}
 				break;
 			case 's':
@@ -83,18 +100,31 @@ std::string perform_printf(Environment& env, const std::string& format_str, T& v
 				// TODO: they are slightly different in presentation,
 				// but not sure how to represent that with stringstreams
 				if (in_format) {
+					auto current_flags = ss.flags();
+
+					if (!precision_flags.empty()) {
+						auto precision = std::atoi(precision_flags.c_str());
+						ss << std::fixed << std::showpoint << std::setprecision(precision);
+					}
+
 					ss << v.template next<double>();
 					in_format = false;
+
+					ss.flags(current_flags);
 				} else {
 					ss << c;
 				}
 				break;
 			default:
 				if (in_format) {
-					if (valid_flags.contains(c)) {
+					if (c == '.') {
+						in_precision = true;
+					} else if (in_precision && valid_precision.contains(c)) {
+						precision_flags.push_back(c);
+					} else if (valid_flags.contains(c)) {
 						format_flags.push_back(c);
 					} else {
-						spdlog::info("encountered invalid flag specifier {}", c);
+						spdlog::info("encountered invalid flag specifier {} (given {})", c, format_str);
 					}
 
 					break;

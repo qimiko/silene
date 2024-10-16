@@ -211,6 +211,8 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, pthread_exit);
 	REGISTER_FN(env, sem_init);
 	REGISTER_FN(env, sem_post);
+	REGISTER_FN(env, sem_wait);
+	REGISTER_FN(env, sem_destroy);
 	REGISTER_FN(env, memcpy);
 	REGISTER_FN(env, memmove);
 	REGISTER_FN(env, memchr);

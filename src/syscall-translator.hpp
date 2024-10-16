@@ -187,13 +187,15 @@ namespace SyscallTranslator {
 	template <Translatable R = void, Translatable... Args>
 	R call_func(Environment& env, std::uint32_t vaddr, Args... args) {
 		// in this case, the caller has to restore the stack
-		auto sp = env.current_cpu()->Regs()[13];
+		auto& regs = env.current_cpu()->Regs();
+		auto sp = regs[13];
 		auto arg_idx = 0u;
 
 		(SyscallTranslator::translate_call_arg(env, arg_idx, args), ...);
-		env.run_func(vaddr);
 
-		env.current_cpu()->Regs()[13] = sp;
+		regs[13] = sp;
+
+		env.run_func(vaddr);
 
 		if constexpr (!std::is_void_v<R>) {
 			// this int is wasteful...

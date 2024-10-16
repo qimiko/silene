@@ -1,8 +1,8 @@
 #include "android-environment.hpp"
 
-bool AndroidEnvironment::validate_pointer_addr(std::uint32_t vaddr) {
-	if (vaddr < PagedMemory::EMU_PAGE_SIZE) {
-		spdlog::warn("attempted to read value at invalid addr {:#010x}", vaddr);
+bool AndroidEnvironment::validate_pointer_addr(std::uint32_t vaddr, bool for_write) {
+	if (vaddr < PagedMemory::EMU_PAGE_SIZE) [[unlikely]] {
+		spdlog::warn("attempted to {} value at invalid addr {:#010x}", for_write ? "write" : "read", vaddr);
 		this->dump_state();
 
 		if (this->_debug_server) {
@@ -41,25 +41,25 @@ std::uint64_t AndroidEnvironment::MemoryRead64(std::uint32_t vaddr) {
 }
 
 void AndroidEnvironment::MemoryWrite8(std::uint32_t vaddr, std::uint8_t value) {
-	this->validate_pointer_addr(vaddr);
+	this->validate_pointer_addr(vaddr, true);
 
 	this->memory_manager().write_byte(vaddr, value);
 }
 
 void AndroidEnvironment::MemoryWrite16(std::uint32_t vaddr, std::uint16_t value) {
-	this->validate_pointer_addr(vaddr);
+	this->validate_pointer_addr(vaddr, true);
 
 	this->memory_manager().write_halfword(vaddr, value);
 }
 
 void AndroidEnvironment::MemoryWrite32(std::uint32_t vaddr, std::uint32_t value) {
-	this->validate_pointer_addr(vaddr);
+	this->validate_pointer_addr(vaddr, true);
 
 	this->memory_manager().write_word(vaddr, value);
 }
 
 void AndroidEnvironment::MemoryWrite64(std::uint32_t vaddr, std::uint64_t value) {
-	this->validate_pointer_addr(vaddr);
+	this->validate_pointer_addr(vaddr, true);
 
 	this->memory_manager().write_doubleword(vaddr, value);
 }
@@ -67,28 +67,28 @@ void AndroidEnvironment::MemoryWrite64(std::uint32_t vaddr, std::uint64_t value)
 // todo: obviously this won't work once threads are introduced
 // figure things out when that happens
 bool AndroidEnvironment::MemoryWriteExclusive8(std::uint32_t vaddr, std::uint8_t value, std::uint8_t expected) {
-	this->validate_pointer_addr(vaddr);
+	this->validate_pointer_addr(vaddr, true);
 
 	this->memory_manager().write_byte(vaddr, value);
 	return true;
 }
 
 bool AndroidEnvironment::MemoryWriteExclusive16(std::uint32_t vaddr, std::uint16_t value, std::uint16_t expected) {
-	this->validate_pointer_addr(vaddr);
+	this->validate_pointer_addr(vaddr, true);
 
 	this->memory_manager().write_halfword(vaddr, value);
 	return true;
 }
 
 bool AndroidEnvironment::MemoryWriteExclusive32(std::uint32_t vaddr, std::uint32_t value, std::uint32_t expected) {
-	this->validate_pointer_addr(vaddr);
+	this->validate_pointer_addr(vaddr, true);
 
 	this->memory_manager().write_word(vaddr, value);
 	return true;
 }
 
 bool AndroidEnvironment::MemoryWriteExclusive64(std::uint32_t vaddr, std::uint64_t value, std::uint64_t expected) {
-	this->validate_pointer_addr(vaddr);
+	this->validate_pointer_addr(vaddr, true);
 
 	this->memory_manager().write_doubleword(vaddr, value);
 	return true;
@@ -155,6 +155,8 @@ void AndroidEnvironment::ExceptionRaised(std::uint32_t pc, Dynarmic::A32::Except
 }
 
 void AndroidEnvironment::run_func(std::uint32_t vaddr) {
+	auto original_cpsr = _cpu->Cpsr();
+
 	// enable thumb mode if lsb is set
 	if (vaddr & 0x1) {
 		_cpu->SetCpsr(0x00000030);
@@ -162,16 +164,20 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 		_cpu->SetCpsr(0x00000000);
 	}
 
+	// strip the thumb bit
 	auto fn_addr = vaddr & ~0x1;
 
-	spdlog::trace("calling fn: {:#08x}", fn_addr);
+	auto& regs = this->_cpu->Regs();
 
 	// stack ptr, return ptr, pc
-	this->_cpu->Regs()[13] = 0xffff'fff0;
-	this->_cpu->Regs()[14] = this->program_loader().get_return_stub_addr();
+	auto original_stack = regs[13];
+	auto original_lr = regs[14];
+	auto original_pc = regs[15];
 
-	// strip the thumb bit
-	this->_cpu->Regs()[15] = fn_addr;
+	spdlog::trace("calling fn {:#010x}: stack={:#010x}, lr={:#010x}, pc={:#010x}", fn_addr, original_stack, original_lr, original_pc);
+
+	regs[14] = this->program_loader().get_return_stub_addr();
+	regs[15] = fn_addr;
 
 	while (1) {
 		ticks_left = 10;
@@ -220,11 +226,11 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 			}
 
 			this->dump_state();
-			return;
+			break;
 		}
 
 		if (Dynarmic::Has(halt_reason, HALT_REASON_FN_END)) {
-			return;
+			break;
 		}
 
 		if (Dynarmic::Has(halt_reason, Dynarmic::HaltReason::Step)) {
@@ -234,6 +240,13 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 		spdlog::error("received unexpected halt: {:#x}", static_cast<int>(halt_reason));
 		throw std::runtime_error("unexpected cpu halt");
 	}
+
+	_cpu->SetCpsr(original_cpsr);
+
+	// restore state
+	regs[13] = original_stack;
+	regs[14] = original_lr;
+	regs[15] = original_pc;
 }
 
 void AndroidEnvironment::dump_state() {

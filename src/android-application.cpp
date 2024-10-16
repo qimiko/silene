@@ -28,6 +28,7 @@ void AndroidApplication::init_cpu() {
 	user_config.callbacks = &_env;
 
 	auto cpu = std::make_shared<Dynarmic::A32::Jit>(user_config);
+	cpu->Regs()[13] = 0xffff'fff0; // initialize stack
 	_env.set_cpu(cpu);
 }
 

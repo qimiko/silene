@@ -24,7 +24,7 @@
 // manages per thread cpu environment
 class AndroidEnvironment final : public Dynarmic::A32::UserCallbacks, public Environment {
 private:
-	bool validate_pointer_addr(std::uint32_t vaddr);
+	bool validate_pointer_addr(std::uint32_t vaddr, bool for_write = false);
 
 	static constexpr auto HALT_REASON_FN_END = Dynarmic::HaltReason::UserDefined1;
 	static constexpr auto HALT_REASON_HANDLE_SYSCALL = Dynarmic::HaltReason::UserDefined2;

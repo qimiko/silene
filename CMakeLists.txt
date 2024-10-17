@@ -30,6 +30,9 @@ CPMAddPackage(
 set(SRC_FILES
 	src/kernel/fcntl.cpp
 	src/libc/stdio.cpp
+	src/libc/semaphore.cpp
+	src/libc/pthread.cpp
+	src/libc/pthread-mutex.cpp
 	src/tcp-server.cpp
 	src/gdb-server.cpp
 	src/elf.cpp

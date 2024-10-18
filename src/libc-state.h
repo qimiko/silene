@@ -5,6 +5,8 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <mutex>
+#include <list>
 
 #include <spdlog/spdlog.h>
 
@@ -24,6 +26,32 @@ class LibcState {
 	std::unordered_map<std::uint32_t, std::FILE*> _open_files{};
 
 	std::uint32_t _strtok_buffer{0u};
+
+	struct MemoryChunk {
+		std::uint32_t start_addr;
+		std::uint32_t size;
+		bool free;
+
+		MemoryChunk* next{nullptr};
+		MemoryChunk* prev{nullptr};
+	};
+
+	struct MemoryChunkComparator {
+		bool operator()(const MemoryChunk* a, const MemoryChunk* b) const {
+			return a->start_addr < b->start_addr;
+		}
+	};
+
+	// O(1) insertion time
+	MemoryChunk* _chunk_head{nullptr};
+	MemoryChunk* _chunk_tail{nullptr};
+
+	// provides O(1) access time
+	std::unordered_map<std::uint32_t, MemoryChunk> _allocated_chunks{};
+
+	std::mutex _allocator_lock{};
+
+	void log_allocator_state();
 
 public:
 

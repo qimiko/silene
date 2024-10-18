@@ -6,12 +6,11 @@ This list is ordered from current highest priority to lowest.
 Naturally, these items may change as the progress progresses.
 
 - [ ] Fix the many OpenGL related bugs
-- [ ] Create a proper memory implementation.
-  - May likely reuse C++'s `unsynchronized_pool_resource`
 - [ ] Sound!
   - [ ] Find something that offers the same metering API that FMOD does... maybe [SoLoud](https://solhsa.com/soloud/)
 - [ ] Improve the implementation for the `^(:?v?s?n?|s?n?)printf$` functions and `sscanf`
 - [ ] `qsort`.
+- [ ] Create a proper memory implementation. The current one is slow...
 
 ## Code quality
 

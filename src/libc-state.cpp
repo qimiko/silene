@@ -1,5 +1,7 @@
 #include "libc-state.h"
 
+#include <sstream>
+
 #include "syscall-handler.hpp"
 #include "syscall-translator.hpp"
 
@@ -23,46 +25,203 @@
 
 #include "gl/gl-wrap.h"
 
+void LibcState::log_allocator_state() {
+	std::stringstream ss;
+
+	auto chunk = _chunk_head;
+	while (chunk) {
+		ss << "[";
+		if (chunk->free) {
+			ss << "*";
+		}
+		ss << std::hex << chunk->start_addr << " size=" << chunk->size << "]=>";
+		chunk = chunk->next;
+	}
+
+	ss << _chunk_tail->start_addr;
+
+	spdlog::info("alloc state: {}", ss.str());
+}
+
 std::uint32_t LibcState::allocate_memory(std::uint32_t size, bool zero_mem) {
 	// TODO: this implementation is terrible.
-
-	auto next = this->_memory.get_next_addr();
-
-	// dword alignment
-	if (next % 8 != 0) {
-		auto next_aligned = ((next / 8) + 1) * 8;
-		this->_memory.allocate(next_aligned - next);
-		next = next_aligned;
+	if (size == 0) {
+		return 0;
 	}
 
-	this->_memory.allocate(size);
+	// bump size to nearest dword
+	size += 8 - (size % 8);
 
+	std::scoped_lock lk{_allocator_lock};
+
+	auto first_free = _chunk_head;
+	while (first_free) {
+		if (first_free->free && first_free->size >= size) {
+			break;
+		}
+
+		first_free = first_free->next;
+	}
+
+	if (first_free == nullptr) {
+		// we can just allocate some large chunk idk
+		auto next = this->_memory.get_next_page_aligned_addr();
+
+		auto base_heap_size = 0x1000000;
+		this->_memory.allocate(base_heap_size); // i think this is 16mb
+
+		_allocated_chunks.try_emplace(next, next, base_heap_size, true, nullptr, _chunk_tail);
+		auto allocated = &_allocated_chunks.at(next);
+
+		if (!_chunk_head) {
+			_chunk_head = allocated;
+		} else {
+			_chunk_tail->next = allocated;
+		}
+
+		_chunk_tail = allocated;
+		first_free = allocated;
+	}
+
+	if (first_free->size > size) {
+		// split the chunk
+		auto end_ptr = first_free->start_addr + size;
+		auto next_chunk_size = first_free->size - size;
+
+		_allocated_chunks.try_emplace(end_ptr, end_ptr, next_chunk_size, true, first_free->next, first_free);
+		auto new_chunk = &_allocated_chunks.at(end_ptr);
+
+		if (first_free->next) {
+			first_free->next->prev = new_chunk;
+		}
+
+		first_free->size = size;
+		first_free->next = new_chunk;
+	}
+
+	auto start = first_free->start_addr;
 	if (zero_mem) {
-		this->_memory.set(next, 0, size);
+		this->_memory.set(start, 0, size);
 	}
 
-	return next;
+	first_free->free = false;
+
+	return start;
 }
 
 void LibcState::free_memory(std::uint32_t vaddr) {
+	if (!_allocated_chunks.contains(vaddr)) {
+		spdlog::warn("attempted to free unallocated chunk at {:#010x}", vaddr);
+		return;
+	}
+
+	std::scoped_lock lk{_allocator_lock};
+
+	auto chunk = &_allocated_chunks.at(vaddr);
+	chunk->free = true;
+
+	// merge with the next chunk, if available
+	if (chunk->next && chunk->next->free) {
+		auto next_chunk = chunk->next;
+
+		if (next_chunk->next) {
+			next_chunk->next->prev = chunk;
+		}
+
+		if (_chunk_tail == next_chunk) {
+			_chunk_tail = chunk;
+		}
+
+		chunk->size += next_chunk->size;
+		chunk->next = next_chunk->next;
+
+		_allocated_chunks.erase(next_chunk->start_addr);
+	}
+
+	// in this case, we delete our chunk and move it into the previous
+	if (chunk->prev && chunk->prev->free) {
+		auto prev_chunk = chunk->prev;
+		prev_chunk->size += chunk->size;
+
+		prev_chunk->next = chunk->next;
+
+		if (chunk->next) {
+			chunk->next->prev = prev_chunk;
+		}
+
+		if (_chunk_tail == chunk) {
+			_chunk_tail = prev_chunk;
+		}
+
+		_allocated_chunks.erase(chunk->start_addr);
+	}
 }
 
 std::uint32_t LibcState::reallocate_memory(std::uint32_t vaddr, std::uint32_t size) {
-	if (vaddr == 0) {
+	if (vaddr == 0 || !_allocated_chunks.contains(vaddr)) {
 		return this->allocate_memory(size);
 	}
 
-	auto new_ptr = this->allocate_memory(size, false);
+	if (size == 0) {
+		this->free_memory(vaddr);
+		return 0;
+	}
 
-	auto src = this->_memory.read_bytes<std::uint8_t>(vaddr);
-	auto dest = this->_memory.read_bytes<std::uint8_t>(new_ptr);
+	size += 8 - (size % 8);
 
-	// we should really track memory sizes, this could create issues
-	std::memcpy(dest, src, size);
+	auto chunk = &_allocated_chunks.at(vaddr);
+	if (chunk->size == size) {
+		return vaddr;
+	}
 
-	this->free_memory(vaddr);
+	if (!chunk->next || !chunk->next->free || chunk->size + chunk->next->size < size) {
+		auto new_ptr = this->allocate_memory(size, false);
 
-	return new_ptr;
+		auto src = this->_memory.read_bytes<std::uint8_t>(vaddr);
+		auto dest = this->_memory.read_bytes<std::uint8_t>(new_ptr);
+
+		std::memcpy(dest, src, chunk->size);
+
+		this->free_memory(vaddr);
+
+		return new_ptr;
+	}
+
+	// we have enough space to move into the next chunk (no copy)
+
+	// merge next chunk into our chunk
+	auto next_chunk = chunk->next;
+
+	if (next_chunk->next) {
+		next_chunk->next->prev = chunk;
+	}
+
+	if (_chunk_tail == next_chunk) {
+		_chunk_tail = chunk;
+	}
+
+	chunk->size += next_chunk->size;
+	chunk->next = next_chunk->next;
+
+	_allocated_chunks.erase(next_chunk->start_addr);
+
+	// split current chunk into something more appropriately sized
+	if (chunk->size > size) {
+		auto end_ptr = chunk->start_addr + size;
+		auto next_chunk_size = chunk->size - size;
+
+		_allocated_chunks.try_emplace(end_ptr, end_ptr, next_chunk_size, true, chunk->next, chunk);
+		auto new_chunk = &_allocated_chunks.at(end_ptr);
+
+		if (chunk->next) {
+			chunk->next->prev = new_chunk;
+		}
+
+		chunk->size = size;
+		chunk->next = new_chunk;
+	}
+
+	return vaddr;
 }
 
 void LibcState::register_destructor(StaticDestructor destructor) {

@@ -144,4 +144,42 @@ std::uint32_t emu_strtok(Environment& env, std::uint32_t str_ptr, std::uint32_t 
 	return begin_token;
 }
 
+std::uint32_t emu_strdup(Environment& env, std::uint32_t str_ptr) {
+	auto str = env.memory_manager().read_bytes<char>(str_ptr);
+	auto mem = env.libc().allocate_memory(strlen(str) + 1);
+
+	auto dest = env.memory_manager().read_bytes<char>(mem);
+	std::strcpy(dest, str);
+
+	return mem;
+}
+
+std::int32_t emu_strchr(Environment& env, std::uint32_t str_ptr, std::int32_t ch) {
+	auto str = env.memory_manager().read_bytes<char>(str_ptr);
+
+	auto r = reinterpret_cast<char*>(std::strchr(str, ch));
+
+	if (r == 0) {
+		return 0;
+	}
+
+	auto offset = reinterpret_cast<std::ptrdiff_t>(r - str);
+
+	return str_ptr + static_cast<std::uint32_t>(offset);
+}
+
+std::int32_t emu_strrchr(Environment& env, std::uint32_t str_ptr, std::int32_t ch) {
+	auto str = env.memory_manager().read_bytes<char>(str_ptr);
+
+	auto r = reinterpret_cast<char*>(std::strrchr(str, ch));
+
+	if (r == 0) {
+		return 0;
+	}
+
+	auto offset = reinterpret_cast<std::ptrdiff_t>(r - str);
+
+	return str_ptr + static_cast<std::uint32_t>(offset);
+}
+
 #endif

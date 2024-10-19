@@ -242,6 +242,13 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 	auto in_specifier = false;
 	auto fmt_specifier = '\0';
 
+	auto parse_match_set = false;
+	auto negate_match_set = false;
+	std::unordered_set<char> match_characters{};
+
+	std::uint32_t field_width = 0;
+
+	std::unordered_set<char> valid_numbers{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
 	std::unordered_set<char> valid_flags{'h'};
 	std::string fmt_flags{};
 
@@ -273,21 +280,51 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 				}
 				inc_src(c);
 				break;
+			case ']':
+				if (in_specifier && parse_match_set) {
+					in_specifier = false;
+					parse_match_set = false;
+					fmt_specifier = '[';
+					break;
+				}
+				inc_src(c);
+				break;
+			case '[':
+				if (in_specifier) {
+					parse_match_set = true;
+					break;
+				}
+				inc_src(c);
+				continue;
 			case '%':
 				if (!in_specifier) {
 					in_specifier = true;
+
+					negate_match_set = false;
+					field_width = 0;
 					fmt_flags.clear();
+					match_characters.clear();
 					break;
 				}
 				inc_src(c);
 				break;
 			default:
 				if (in_specifier) {
-					if (valid_flags.contains(c)) {
+					if (!parse_match_set && valid_numbers.contains(c)) {
+						field_width = (field_width * 10) + c - '0';
+						break;
+					} else if (parse_match_set) {
+						if (c == '^' && match_characters.empty()) {
+							negate_match_set = true;
+						} else {
+							match_characters.insert(c);
+						}
+						break;
+					} else if (valid_flags.contains(c)) {
 						fmt_flags.push_back(c);
 						break;
 					} else {
-						spdlog::info("unknown sscanf specifier {}", c);
+						spdlog::info("unknown sscanf specifier `{}` (src={}, format={})", c, src, format);
 					}
 				}
 				inc_src(c);
@@ -381,6 +418,23 @@ std::int32_t perform_sscanf(Environment& env, const std::string& src, const std:
 						success = true;
 						env.memory_manager().write_word(next_ptr, std::bit_cast<std::uint32_t>(ret));
 						src_data = end_ptr;
+					}
+
+					break;
+				}
+				case '[': {
+					std::string matched_characters = "";
+
+					while (*src_data && (negate_match_set ^ match_characters.contains(*src_data)) && (field_width == 0 || matched_characters.size() <= field_width)) {
+						matched_characters.push_back(*src_data);
+						src_data++;
+					}
+
+					spdlog::trace("parse match set {} : *{:#x} -> {}", args_count, next_ptr, matched_characters);
+
+					if (!match_characters.empty()) {
+						env.memory_manager().copy(next_ptr, matched_characters.data(), matched_characters.length() + 1);
+						success = true;
 					}
 
 					break;

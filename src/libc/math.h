@@ -67,6 +67,10 @@ double emu_pow(Environment& env, double base, double exp) {
   return std::pow(base, exp);
 }
 
+double emu_atan(Environment& env, double x) {
+  return std::atan(x);
+}
+
 double emu_atan2(Environment& env, double y, double x) {
   return std::atan2(y, x);
 }

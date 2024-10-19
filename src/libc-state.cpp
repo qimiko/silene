@@ -20,6 +20,8 @@
 #include "libc/time.h"
 #include "libc/ctype.h"
 #include "libc/semaphore.h"
+#include "libc/unistd.h"
+#include "libc/inet.h"
 
 #include "kernel/kernel.h"
 
@@ -326,6 +328,7 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, round);
 	REGISTER_FN(env, roundf);
 	REGISTER_FN(env, lroundf);
+	REGISTER_FN(env, atan);
 	REGISTER_FN(env, atan2);
 	REGISTER_FN(env, atan2f);
 	REGISTER_FN(env, acos);
@@ -391,6 +394,7 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, fwrite);
 	REGISTER_FN(env, fputs);
 	REGISTER_FN(env, getsockopt);
+	REGISTER_FN(env, socket);
 	REGISTER_FN(env, __stack_chk_fail);
 	REGISTER_FN(env, memcmp);
 	REGISTER_FN(env, __android_log_print);
@@ -406,9 +410,13 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, fprintf);
 	REGISTER_FN(env, fputc);
 	REGISTER_FN(env, strtol);
+	REGISTER_FN(env, strtoul);
 	REGISTER_FN(env, strtod);
 	REGISTER_FN(env, strstr);
 	REGISTER_FN(env, strtok);
+	REGISTER_FN(env, strdup);
+	REGISTER_FN(env, strchr);
+	REGISTER_FN(env, strrchr);
 	REGISTER_FN(env, gettimeofday);
 	REGISTER_FN(env, time);
 	REGISTER_FN(env, clock_gettime);
@@ -421,6 +429,10 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, isspace);
 	REGISTER_FN(env, isalnum);
 	REGISTER_FN(env, isalpha);
+	REGISTER_FN(env, close);
+	REGISTER_FN(env, inet_pton);
+	REGISTER_FN(env, getaddrinfo);
+	REGISTER_FN(env, freeaddrinfo);
 
 	auto ctype_addr = this->_memory.get_next_word_addr();
 	this->_memory.allocate(sizeof(emu__ctype_));

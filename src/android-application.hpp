@@ -3,7 +3,12 @@
 #ifndef _ANDROID_APPLICATION_HPP
 #define _ANDROID_APPLICATION_HPP
 
-#include <vector>
+#include <array>
+#include <unordered_map>
+#include <atomic>
+#include <mutex>
+#include <thread>
+
 #include <dynarmic/interface/exclusive_monitor.h>
 
 #include "application-state.h"
@@ -19,18 +24,28 @@ public:
 	};
 
 private:
+	static constexpr std::uint32_t MAX_PROCESSORS = 4;
+
 	// default initialize with an instance of memory
 	ApplicationConfig _config;
 	ApplicationState _state{};
-	AndroidEnvironment _env;
-	Dynarmic::ExclusiveMonitor _monitor{1};
 
-	// creates the first cpu
-	void init_cpu();
+	std::uint32_t _last_tid{1};
+	std::unordered_map<std::uint32_t, AndroidEnvironment> _envs{};
+	std::unordered_map<std::uint32_t, std::thread> _unclaimed_threads{};
+
+	std::mutex _envs_mutex{};
+
+	Dynarmic::ExclusiveMonitor _monitor{MAX_PROCESSORS};
+
+	// primary env for function calls
+	AndroidEnvironment _env;
 
 	// initializes the stack and initial callback addresses
 	// should be called before anything involving the memory is performed
 	void init_memory();
+
+	void create_processor_with_func(std::uint32_t start_addr, std::uint32_t arg, std::uint32_t id);
 
 public:
 	// creates the initial application state
@@ -47,6 +62,10 @@ public:
 
 	// begins game initialization
 	void init_game(int width, int height);
+
+	std::uint32_t create_thread(std::uint32_t start_addr, std::uint32_t arg);
+	bool detach_thread(std::uint32_t thread_id);
+	bool join_thread(std::uint32_t thread_id, std::uint32_t exit_value);
 
 	void draw_frame();
 

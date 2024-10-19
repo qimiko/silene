@@ -3,6 +3,8 @@
 #include <atomic>
 #include <type_traits>
 
+#include "../android-application.hpp"
+
 std::int32_t emu_pthread_key_create(Environment& env, std::uint32_t key_ptr, std::uint32_t destructor_fn_ptr) {
 	spdlog::info("TODO: pthread_key_create");
 	// this should be implemented, one day. not sure how honestly
@@ -49,12 +51,24 @@ std::uint32_t emu_pthread_once(Environment& env, std::uint32_t once_control_ptr,
 }
 
 std::int32_t emu_pthread_create(Environment& env, std::uint32_t thread_ptr, std::uint32_t attr_ptr, std::uint32_t start_routine, std::uint32_t arg) {
-	spdlog::info("TODO: pthread_create");
+	if (attr_ptr != 0) {
+		spdlog::info("TODO: pthread_create with non-zero attr");
+	}
+
+	auto tid = env.application().create_thread(start_routine, arg);
+	env.memory_manager().write_word(thread_ptr, tid);
+
 	return 0;
 }
 
 std::int32_t emu_pthread_detach(Environment& env, std::uint32_t thread) {
-	spdlog::info("TODO: pthread_detach");
+	env.application().detach_thread(thread);
+
+	return 0;
+}
+
+std::int32_t emu_pthread_exit(Environment& env, std::uint32_t ret_val_ptr) {
+	spdlog::info("TODO: pthread_exit");
 	return 0;
 }
 
@@ -75,10 +89,5 @@ std::uint32_t emu_pthread_getspecific(Environment& env, std::int32_t key) {
 
 std::int32_t emu_pthread_setspecific(Environment& env, std::int32_t key, std::uint32_t value) {
 	spdlog::info("TODO: pthread_setspecific");
-	return 0;
-}
-
-std::int32_t emu_pthread_exit(Environment& env, std::uint32_t ret_val_ptr) {
-	spdlog::info("TODO: pthread_exit");
 	return 0;
 }

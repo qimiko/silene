@@ -13,25 +13,6 @@ void AndroidApplication::init_jni() {
 	}
 }
 
-void AndroidApplication::init_cpu() {
-	auto cp15 = std::make_shared<AndroidCP15>();
-
-	Dynarmic::A32::UserConfig user_config{};
-
-	// this feels like a hack..?
-	user_config.processor_id = 0;
-	user_config.global_monitor = &_monitor;
-
-	user_config.coprocessors[15] = cp15;
-
-	// user_config.very_verbose_debugging_output = true;
-	user_config.callbacks = &_env;
-
-	auto cpu = std::make_shared<Dynarmic::A32::Jit>(user_config);
-	cpu->Regs()[13] = 0xffff'fff0; // initialize stack
-	_env.set_cpu(cpu);
-}
-
 void AndroidApplication::load_library(Elf::File& lib) {
 	auto header = lib.header();
 	if (header->type != Elf::Type::Shared || header->machine != Elf::Machine::Armv7) {
@@ -58,11 +39,80 @@ void AndroidApplication::finalize_libraries() {
 void AndroidApplication::init() {
 	this->init_memory();
 
-	this->init_cpu();
-
 	if (_config.debug) {
 		_env.begin_debugging();
 	}
+}
+
+void AndroidApplication::create_processor_with_func(std::uint32_t start_addr, std::uint32_t arg, std::uint32_t id) {
+	auto& env = _envs.at(id);
+	env.current_cpu()->Regs()[0] = arg;
+	env.run_func(start_addr);
+
+	{
+		// this processor is unneeded, so remove it ig
+		// otherwise, keep it around to read the return value
+		if (!_unclaimed_threads.contains(id)) {
+			std::scoped_lock lk{_envs_mutex};
+			_envs.erase(id);
+		}
+	}
+}
+
+std::uint32_t AndroidApplication::create_thread(std::uint32_t start_addr, std::uint32_t arg) {
+	std::scoped_lock lk{_envs_mutex};
+
+	auto id = _last_tid++;
+	_envs.try_emplace(id, *this, _state, &_monitor, id);
+
+	// keep the thread alive so join/detach can be called on it
+	_unclaimed_threads.try_emplace(id, &AndroidApplication::create_processor_with_func, this, start_addr, arg, id);
+
+	return id;
+}
+
+bool AndroidApplication::detach_thread(std::uint32_t thread_id) {
+	if (!_unclaimed_threads.contains(thread_id)) {
+		return false;
+	}
+
+	auto& thread = _unclaimed_threads.at(thread_id);
+	thread.detach();
+
+	{
+		std::scoped_lock lk{_envs_mutex};
+		_unclaimed_threads.erase(thread_id);
+
+		if (!_envs.at(thread_id).is_active()) {
+			_envs.erase(thread_id);
+		}
+	}
+
+	return true;
+}
+
+bool AndroidApplication::join_thread(std::uint32_t thread_id, std::uint32_t exit_value) {
+	if (!_unclaimed_threads.contains(thread_id)) {
+		return false;
+	}
+
+	auto& thread = _unclaimed_threads.at(thread_id);
+	thread.join();
+
+	auto r_ptr = 0;
+	{
+		std::scoped_lock lk{_envs_mutex};
+		_unclaimed_threads.erase(thread_id);
+
+		r_ptr = _envs.at(thread_id).current_cpu()->Regs()[0];
+		_envs.erase(thread_id);
+	}
+
+	if (exit_value != 0) {
+		memory_manager().write_word(exit_value, r_ptr);
+	}
+
+	return true;
 }
 
 void AndroidApplication::init_memory() {
@@ -110,7 +160,7 @@ void AndroidApplication::init_game(int width, int height) {
 }
 
 AndroidApplication::AndroidApplication(ApplicationConfig config)
-	: StateHolder{_state}, _config{config}, _env{_state} {}
+	: StateHolder{_state}, _config{config}, _env{*this, _state, &_monitor, 0} {}
 
 void AndroidApplication::draw_frame() {
 	auto jni_env_ptr = this->jni().get_env_ptr();

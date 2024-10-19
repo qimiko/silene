@@ -7,9 +7,11 @@
 
 #include <dynarmic/interface/A32/a32.h>
 #include <dynarmic/interface/A32/config.h>
+#include <dynarmic/interface/exclusive_monitor.h>
 
 #include <spdlog/spdlog.h>
 
+#include "android-coprocessor.hpp"
 #include "application-state.h"
 #include "paged-memory.hpp"
 #include "syscall-handler.hpp"
@@ -20,6 +22,8 @@
 #include "gdb-server.h"
 
 #include "environment.h"
+
+class AndroidApplication;
 
 // manages per thread cpu environment
 class AndroidEnvironment final : public Dynarmic::A32::UserCallbacks, public Environment {
@@ -34,7 +38,14 @@ private:
 	std::unique_ptr<GdbServer> _debug_server{nullptr};
 
 	std::shared_ptr<Dynarmic::A32::Jit> _cpu{nullptr};
+	std::shared_ptr<AndroidCP15> _cp15{std::make_shared<AndroidCP15>()};
+
+	std::int32_t _thread_id{0};
+
 	std::uint64_t ticks_left = 0;
+
+	bool _active = false;
+	AndroidApplication& _application;
 
 public:
 	std::uint8_t MemoryRead8(std::uint32_t vaddr) override;
@@ -93,8 +104,8 @@ public:
 
 	void begin_debugging();
 
-	void set_cpu(std::shared_ptr<Dynarmic::A32::Jit> cpu) {
-		this->_cpu = cpu;
+	virtual std::int32_t thread_id() override {
+		return this->_thread_id;
 	}
 
 	void dump_state() override;
@@ -103,7 +114,15 @@ public:
 		return this->_cpu;
 	}
 
-	AndroidEnvironment(ApplicationState& state);
+	bool is_active() const {
+		return this->_active;
+	}
+
+	virtual AndroidApplication& application() const override {
+		return this->_application;
+	}
+
+	AndroidEnvironment(AndroidApplication& application, ApplicationState& state, Dynarmic::ExclusiveMonitor* monitor, std::uint32_t thread_id);
 };
 
 #endif

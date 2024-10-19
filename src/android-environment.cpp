@@ -155,6 +155,8 @@ void AndroidEnvironment::ExceptionRaised(std::uint32_t pc, Dynarmic::A32::Except
 }
 
 void AndroidEnvironment::run_func(std::uint32_t vaddr) {
+	this->_active = true;
+
 	auto original_cpsr = _cpu->Cpsr();
 
 	// enable thumb mode if lsb is set
@@ -247,6 +249,8 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 	regs[13] = original_stack;
 	regs[14] = original_lr;
 	regs[15] = original_pc;
+
+	this->_active = false;
 }
 
 void AndroidEnvironment::dump_state() {
@@ -266,4 +270,21 @@ void AndroidEnvironment::begin_debugging() {
 	this->_debug_server->begin_connection("0.0.0.0", port);
 }
 
-AndroidEnvironment::AndroidEnvironment(ApplicationState& state) : Environment(state) {}
+AndroidEnvironment::AndroidEnvironment(AndroidApplication& application, ApplicationState& state, Dynarmic::ExclusiveMonitor* monitor, std::uint32_t thread_id) : Environment(state), _application{application} {
+	_cp15->set_thread_id(thread_id);
+
+	Dynarmic::A32::UserConfig user_config{};
+
+	// this feels like a hack..?
+	user_config.processor_id = thread_id;
+	user_config.global_monitor = monitor;
+
+	user_config.coprocessors[15] = _cp15;
+
+	// user_config.very_verbose_debugging_output = true;
+	user_config.enable_cycle_counting = false;
+	user_config.callbacks = this;
+
+	_cpu = std::make_shared<Dynarmic::A32::Jit>(user_config);
+	_cpu->Regs()[13] = 0xffff'fff0 - (PagedMemory::EMU_PAGE_SIZE * 10 * (thread_id - 1)); // initialize stack
+}

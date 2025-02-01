@@ -13,9 +13,6 @@
 #include "elf.h"
 #include "zip-file.h"
 
-// we don't want it to die...
-std::unique_ptr<AndroidApplication> GLOBAL_APPLICATION{nullptr};
-
 SDL_AppResult SDL_AppInit(void** appstate, int argc, char** argv) {
 	CLI::App app;
 	argv = app.ensure_utf8(argv);

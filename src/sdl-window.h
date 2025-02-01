@@ -26,16 +26,17 @@ class SdlAppWindow : public BaseWindow {
 
 	WindowConfig _config;
 
-	int _width, _height;
-
 	SDL_Window* _window{nullptr};
 	bool _is_first_frame{false};
 
 	std::unique_ptr<KeybindManager> _keybind_manager{nullptr};
-	
+
 	// store it here as it gets deleted from main
 	std::unique_ptr<AndroidApplication> _application;
-	
+
+	float _scale_x{0.0f};
+	float _scale_y{0.0f};
+
 	float _fps{};
 	std::uint32_t _frame_counter{};
 	std::uint64_t _last_tick{};

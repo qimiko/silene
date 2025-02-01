@@ -7,7 +7,7 @@
 
 bool SdlAppWindow::init() {
 	SDL_SetAppMetadata("Silene", "0.0.1", "dev.xyze.silene");
-	
+
 	if (!SDL_Init(SDL_INIT_VIDEO)) {
 		spdlog::info("failed to initialize SDL: {}", SDL_GetError());
 		return false;
@@ -24,14 +24,14 @@ bool SdlAppWindow::init() {
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
 
-	auto window_title = fmt::format("{} (Silene)", _config.title_name);	
-	auto window = SDL_CreateWindow(window_title.c_str(), 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+	auto window_title = fmt::format("{} (Silene)", _config.title_name);
+	auto window = SDL_CreateWindow(window_title.c_str(), 1280, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
 	if (window == nullptr) {
 		spdlog::info("failed to create SDL window: {}", SDL_GetError());
 		return false;
 	}
-	
+
 	_window = window;
 
 	auto glContext = SDL_GL_CreateContext(window);
@@ -77,8 +77,14 @@ bool SdlAppWindow::init() {
 	if (!_config.keybind_file.empty()) {
 		_keybind_manager = std::make_unique<KeybindManager>(_config.keybind_file);
 	}
-	
+
 	_is_first_frame = true;
+
+	int pixel_w, window_w, pixel_h, window_h;
+	SDL_GetWindowSizeInPixels(_window, &pixel_w, &pixel_h);
+	SDL_GetWindowSize(_window, &window_w, &window_h);
+	_scale_x = static_cast<float>(pixel_w) / window_w;
+	_scale_y = static_cast<float>(pixel_h) / window_h;
 
 	return true;
 }
@@ -135,8 +141,8 @@ void SdlAppWindow::handle_event(SDL_Event* event) {
 
 			application().send_touch(button.down, {
 				1,
-				static_cast<float>(button.x),
-				static_cast<float>(button.y)
+				static_cast<float>(button.x * _scale_x),
+				static_cast<float>(button.y * _scale_y)
 			});
 
 			break;
@@ -145,8 +151,8 @@ void SdlAppWindow::handle_event(SDL_Event* event) {
 			auto& motion = event->motion;
 			application().move_touches({{
 				1,
-				static_cast<float>(motion.x),
-				static_cast<float>(motion.y)
+				static_cast<float>(motion.x * _scale_x),
+				static_cast<float>(motion.y * _scale_y)
 			}});
 			break;
 		}
@@ -168,7 +174,7 @@ void SdlAppWindow::main_loop() {
 	auto current_tick = SDL_GetTicks();
 	auto tick_difference = current_tick - _last_tick;
 	if (tick_difference >= 1000) {
-		_last_tick = SDL_GetTicks();	
+		_last_tick = SDL_GetTicks();
 		_fps = static_cast<float>(_frame_counter * 1000) / tick_difference;
 		_frame_counter = 0;
 	} else {
@@ -177,7 +183,7 @@ void SdlAppWindow::main_loop() {
 
 	if (_is_first_frame) {
 		int width, height;
-		SDL_GetWindowSize(_window, &width, &height);
+		SDL_GetWindowSizeInPixels(_window, &width, &height);
 
 		application().init_game(width, height);
 		_is_first_frame = false;
@@ -195,7 +201,7 @@ void SdlAppWindow::main_loop() {
 			float xpos, ypos;
 			SDL_GetMouseState(&xpos, &ypos);
 
-			ImGui::Text("X: %.0f | Y: %.0f", xpos, ypos);
+			ImGui::Text("X: %.0f | Y: %.0f", xpos * _scale_x, ypos * _scale_y);
 		}
 	}
 

@@ -157,7 +157,7 @@ namespace SyscallTranslator {
 	namespace {
 		template <Translatable R, Translatable... Args>
 		inline void translate_wrap_helper(R(*fn)(Environment& f, Args... args), Environment& env) {
-			auto idx = 0u;
+			[[maybe_unused]] auto idx = 0u;
 
 			std::tuple<Environment&, Args...> args{env, SyscallTranslator::translate_reg<Args>(env, idx)...};
 

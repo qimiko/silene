@@ -5,11 +5,11 @@
 #include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
 
+#include "glfw-window.h"
 #include "android-application.hpp"
 #include "keybind-manager.hpp"
 #include "elf.h"
 #include "zip-file.h"
-#include "glfw-window.h"
 
 int main(int argc, char** argv) {
 	CLI::App app;

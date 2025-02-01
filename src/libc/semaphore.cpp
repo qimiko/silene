@@ -6,7 +6,7 @@
 // https://github.com/aosp-mirror/platform_bionic/blob/main/libc/bionic/semaphore.cpp
 
 namespace {
-constexpr std::uint32_t SEM_VALUE_MAX = 0x3fffffff;
+constexpr std::uint32_t SILENE_SEM_VALUE_MAX = 0x3fffffff;
 constexpr std::uint32_t SEMCOUNT_VALUE_SHIFT = 1;
 constexpr std::uint32_t SEMCOUNT_SHARED_MASK = 0x00000001;
 constexpr std::uint32_t SEMCOUNT_VALUE_MASK = 0xfffffffe;
@@ -30,11 +30,11 @@ constexpr std::uint32_t semcount_from_value(std::uint32_t val) {
 constexpr std::int32_t SEMCOUNT_ONE = semcount_from_value(1);
 constexpr std::uint32_t SEMCOUNT_MINUS_ONE = semcount_from_value(~0U);
 
-constexpr std::uint32_t sem_get_shared(std::atomic_uint32_t* sem_count_ptr) {
+std::uint32_t sem_get_shared(std::atomic_uint32_t* sem_count_ptr) {
 	return std::atomic_load_explicit(sem_count_ptr, std::memory_order_relaxed) & SEMCOUNT_SHARED_MASK;
 }
 
-constexpr std::int32_t sem_dec(std::atomic_uint32_t* sem_count_ptr) {
+std::int32_t sem_dec(std::atomic_uint32_t* sem_count_ptr) {
 	auto old_value = std::atomic_load_explicit(sem_count_ptr, std::memory_order_relaxed);
 	auto shared = old_value & SEMCOUNT_SHARED_MASK;
 
@@ -47,13 +47,13 @@ constexpr std::int32_t sem_dec(std::atomic_uint32_t* sem_count_ptr) {
 	return semcount_to_value(old_value);
 }
 
-constexpr std::int32_t sem_inc(std::atomic_uint32_t* sem_count_ptr) {
+std::int32_t sem_inc(std::atomic_uint32_t* sem_count_ptr) {
 	auto old_value = std::atomic_load_explicit(sem_count_ptr, std::memory_order_relaxed);
 	auto shared = old_value & SEMCOUNT_SHARED_MASK;
 	auto new_value = 0u;
 
 	do {
-		if (semcount_to_value(old_value) == SEM_VALUE_MAX) {
+		if (semcount_to_value(old_value) == SILENE_SEM_VALUE_MAX) {
 			break;
 		}
 
@@ -71,7 +71,7 @@ constexpr std::int32_t sem_inc(std::atomic_uint32_t* sem_count_ptr) {
 std::uint32_t emu_sem_init(Environment& env, std::uint32_t sem_ptr, std::int32_t p_shared, std::uint32_t value) {
 	// semaphores are pointers to atomic_uints on armv7
 	// in this case we don't actually need to care about the layout, but this is probably easier...
-	if (value > SEM_VALUE_MAX) {
+	if (value > SILENE_SEM_VALUE_MAX) {
 		return -1;
 	}
 
@@ -94,7 +94,7 @@ std::int32_t emu_sem_post(Environment& env, std::uint32_t sem_ptr) {
 	auto old_value = sem_inc(sem_atomic);
 	if (old_value < 0) {
 		std::atomic_notify_all(sem_atomic);
-	} else if (old_value == SEM_VALUE_MAX) {
+	} else if (old_value == SILENE_SEM_VALUE_MAX) {
 		return -1;
 	}
 

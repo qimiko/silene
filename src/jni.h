@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <variant>
 #include <string>
+#include <vector>
 #include <string_view>
 
 class StateHolder;
@@ -34,31 +35,31 @@ struct JNIEnv {
 	std::uint32_t ptr_toReflectedField{ptr_defaultFn}; // (JNIEnv*, jclass, jfieldID, jboolean) -> jobject
 	std::uint32_t ptr_throw{ptr_defaultFn}; // (JNIEnv*, jthrowable) -> jint
 	std::uint32_t ptr_throwNew{ptr_defaultFn}; // (JNIEnv *, jclass, const char *) -> jint
-	std::uint32_t	ptr_exceptionOccurred{ptr_defaultFn}; // (JNIEnv*) -> jthrowable
-	std::uint32_t	ptr_exceptionDescribe{ptr_defaultFn}; // (JNIEnv*) -> void
-	std::uint32_t	ptr_exceptionClear{ptr_defaultFn}; // (JNIEnv*) -> void
-	std::uint32_t	ptr_fatalError{ptr_defaultFn}; // (JNIEnv*, const char*) -> void
-	std::uint32_t	ptr_pushLocalFrame{ptr_defaultFn}; // (JNIEnv*, jint) -> jint
-	std::uint32_t	ptr_popLocalFrame{ptr_defaultFn}; // (JNIEnv*, jobject) -> jobject
-	std::uint32_t	ptr_newGlobalRef{ptr_defaultFn}; // (JNIEnv*, jobject) -> jobject
-	std::uint32_t	ptr_deleteGlobalRef{ptr_defaultFn}; // (JNIEnv*, jobject) -> void
-	std::uint32_t	ptr_deleteLocalRef{ptr_defaultFn}; // (JNIEnv*, jobject) -> void
-	std::uint32_t	ptr_isSameObject{ptr_defaultFn}; // (JNIEnv*, jobject, jobject) -> jboolean
-	std::uint32_t	ptr_newLocalRef{ptr_defaultFn}; // (JNIEnv*, jobject) -> jobject
-	std::uint32_t	ptr_ensureLocalCapacity{ptr_defaultFn}; // (JNIEnv*, jint) -> jint
-	std::uint32_t	ptr_allocObject{ptr_defaultFn}; // (JNIEnv*, jclass) -> jobject
-	std::uint32_t	ptr_newObject{ptr_defaultFn}; // (JNIEnv*, jclass, jmethodID, ...) -> jobject
-	std::uint32_t	ptr_newObjectV{ptr_defaultFn}; // (JNIEnv*, jclass, jmethodID, va_list) -> jobject
-	std::uint32_t	ptr_newObjectA{ptr_defaultFn}; // (JNIEnv*, jclass, jmethodID, jvalue*) -> jobject
-	std::uint32_t	ptr_getObjectClass{ptr_defaultFn}; // (JNIEnv*, jobject) -> jclass
-	std::uint32_t	ptr_isInstanceOf{ptr_defaultFn}; // (JNIEnv*, jobject, jclass) -> jboolean
-	std::uint32_t	ptr_getMethodID{ptr_defaultFn}; // (JNIEnv*, jclass, const char*, const char*) -> jmethodID
-	std::uint32_t	ptr_callObjectMethod{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, ...) -> jobject
-	std::uint32_t	ptr_callObjectMethodV{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, va_list) -> jobject
-	std::uint32_t	ptr_callObjectMethodA{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, jvalue*) -> jobject
-	std::uint32_t	ptr_callBooleanMethod{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, ...) -> jboolean
-	std::uint32_t	ptr_callBooleanMethodV{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, va_list) -> jboolean
-	std::uint32_t	ptr_callBooleanMethodA{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, jvalue*) -> jboolean
+	std::uint32_t ptr_exceptionOccurred{ptr_defaultFn}; // (JNIEnv*) -> jthrowable
+	std::uint32_t ptr_exceptionDescribe{ptr_defaultFn}; // (JNIEnv*) -> void
+	std::uint32_t ptr_exceptionClear{ptr_defaultFn}; // (JNIEnv*) -> void
+	std::uint32_t ptr_fatalError{ptr_defaultFn}; // (JNIEnv*, const char*) -> void
+	std::uint32_t ptr_pushLocalFrame{ptr_defaultFn}; // (JNIEnv*, jint) -> jint
+	std::uint32_t ptr_popLocalFrame{ptr_defaultFn}; // (JNIEnv*, jobject) -> jobject
+	std::uint32_t ptr_newGlobalRef{ptr_defaultFn}; // (JNIEnv*, jobject) -> jobject
+	std::uint32_t ptr_deleteGlobalRef{ptr_defaultFn}; // (JNIEnv*, jobject) -> void
+	std::uint32_t ptr_deleteLocalRef{ptr_defaultFn}; // (JNIEnv*, jobject) -> void
+	std::uint32_t ptr_isSameObject{ptr_defaultFn}; // (JNIEnv*, jobject, jobject) -> jboolean
+	std::uint32_t ptr_newLocalRef{ptr_defaultFn}; // (JNIEnv*, jobject) -> jobject
+	std::uint32_t ptr_ensureLocalCapacity{ptr_defaultFn}; // (JNIEnv*, jint) -> jint
+	std::uint32_t ptr_allocObject{ptr_defaultFn}; // (JNIEnv*, jclass) -> jobject
+	std::uint32_t ptr_newObject{ptr_defaultFn}; // (JNIEnv*, jclass, jmethodID, ...) -> jobject
+	std::uint32_t ptr_newObjectV{ptr_defaultFn}; // (JNIEnv*, jclass, jmethodID, va_list) -> jobject
+	std::uint32_t ptr_newObjectA{ptr_defaultFn}; // (JNIEnv*, jclass, jmethodID, jvalue*) -> jobject
+	std::uint32_t ptr_getObjectClass{ptr_defaultFn}; // (JNIEnv*, jobject) -> jclass
+	std::uint32_t ptr_isInstanceOf{ptr_defaultFn}; // (JNIEnv*, jobject, jclass) -> jboolean
+	std::uint32_t ptr_getMethodID{ptr_defaultFn}; // (JNIEnv*, jclass, const char*, const char*) -> jmethodID
+	std::uint32_t ptr_callObjectMethod{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, ...) -> jobject
+	std::uint32_t ptr_callObjectMethodV{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, va_list) -> jobject
+	std::uint32_t ptr_callObjectMethodA{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, jvalue*) -> jobject
+	std::uint32_t ptr_callBooleanMethod{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, ...) -> jboolean
+	std::uint32_t ptr_callBooleanMethodV{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, va_list) -> jboolean
+	std::uint32_t ptr_callBooleanMethodA{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, jvalue*) -> jboolean
 	std::uint32_t ptr_callByteMethod{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, ...) -> jbyte
 	std::uint32_t ptr_callByteMethodV{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, va_list) -> jbyte
 	std::uint32_t ptr_callByteMethodA{ptr_defaultFn}; // (JNIEnv*, jobject, jmethodID, jvalue*) -> jbyte

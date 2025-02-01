@@ -5,7 +5,7 @@
 #include <optional>
 #include <utility>
 
-#include <GLFW/glfw3.h>
+#include <string_view>
 #include <toml.hpp>
 
 #include "android-environment.hpp"
@@ -18,10 +18,8 @@ class KeybindManager {
 private:
     toml::basic_value<toml::type_config> root;
 public:
-    std::optional<std::pair<float, float>> handle(int key, int scancode, int action) {
-        auto key_name = glfwGetKeyName(key, scancode);
-
-        if (!key_name) return std::nullopt;
+    std::optional<std::pair<float, float>> handle(std::string_view key_name) {
+        if (key_name.empty()) return std::nullopt;
 
         auto pos = toml::find_or<std::vector<int>>(root, key_name, {});
 

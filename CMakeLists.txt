@@ -12,6 +12,8 @@ endif()
 
 option(SILENE_USE_ANGLE "Uses ANGLE instead of the desktop's OpenGL" OFF)
 
+option(SILENE_USE_SDL "Uses SDL instead of GLFW on desktop platforms" OFF)
+
 if(NOT DEFINED SILENE_USE_EGL AND "${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
 	set(SILENE_USE_EGL ON)
 endif()
@@ -23,7 +25,7 @@ include(cmake/CPM.cmake)
 CPMAddPackage(
 	NAME imgui
 	GITHUB_REPOSITORY ocornut/imgui
-	VERSION 1.91.2
+	VERSION 1.91.8
 	DOWNLOAD_ONLY YES
 )
 
@@ -77,12 +79,21 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
 
 	add_library(silene SHARED ${SRC_FILES})
 else()
-	set(SRC_FILES ${SRC_FILES}
-		src/glfw-window.cpp
-		src/main.cpp
+	if(SILENE_USE_SDL)
+		set(SRC_FILES ${SRC_FILES}
+			src/sdl-window.cpp
+			src/sdl-main.cpp
 
-		${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-	)
+			${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
+		)
+	else()
+		set(SRC_FILES ${SRC_FILES}
+			src/glfw-window.cpp
+			src/main.cpp
+
+			${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+		)
+	endif()
 
 	add_executable(silene ${SRC_FILES})
 endif()
@@ -144,9 +155,14 @@ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
 	mark_as_advanced(APP_SERVICES_LIBRARY)
 	target_link_libraries(silene ${APP_SERVICES_LIBRARY})
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-	find_package(glfw3 3.3 REQUIRED)
-	target_include_directories(silene PRIVATE ${GLFW_INCLUDE_DIRS})
-	target_link_libraries(silene glfw)
+	if(SILENE_USE_SDL)
+		find_package(SDL3 REQUIRED)
+		target_link_libraries(silene SDL3::SDL3)
+	else()
+		find_package(glfw3 3.3 REQUIRED)
+		target_include_directories(silene PRIVATE ${GLFW_INCLUDE_DIRS})
+		target_link_libraries(silene glfw)
+	endif()
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Android")
 	find_package(game-activity REQUIRED CONFIG)
 	find_package(games-frame-pacing REQUIRED CONFIG)

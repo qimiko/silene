@@ -39,16 +39,18 @@ void GlfwAppWindow::glfw_mouse_move_callback(GLFWwindow* window, double xpos, do
 void GlfwAppWindow::glfw_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	auto env = reinterpret_cast<GlfwAppWindow*>(glfwGetWindowUserPointer(window));
 	if (auto& keybind_manager = env->_keybind_manager; keybind_manager != nullptr) {
-		if (auto touch = keybind_manager->handle(key, scancode, action)) {
-			auto [x, y] = touch.value();
+		if (auto key_name = glfwGetKeyName(key, scancode)) {
+			if (auto touch = keybind_manager->handle(key_name)) {
+				auto [x, y] = touch.value();
 
-			env->application().send_touch(action == GLFW_PRESS, {
-				1,
-				static_cast<float>(x),
-				static_cast<float>(y)
-			});
+				env->application().send_touch(action == GLFW_PRESS, {
+					1,
+					static_cast<float>(x),
+					static_cast<float>(y)
+				});
 
-			return;
+				return;
+			}
 		}
 	}
 

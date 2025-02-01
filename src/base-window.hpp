@@ -17,6 +17,8 @@ protected:
 	}
 
 public:
+	virtual ~BaseWindow() = default;
+
 	virtual bool init() = 0;
 	virtual void main_loop() = 0;
 

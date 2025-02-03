@@ -22,8 +22,18 @@ void Silene::JniState::pre_init(const StateHolder& env) {
 	jni_env.ptr_releaseStringUTFChars = REGISTER_STUB(env, releaseStringUTFChars);
 	jni_env.ptr_findClass = REGISTER_STUB(env, findClass);
 	jni_env.ptr_deleteLocalRef = REGISTER_STUB(env, deleteLocalRef);
-	jni_env.ptr_callStaticVoidMethodV = REGISTER_STUB(env, callStaticVoidMethodV);
-	jni_env.ptr_callStaticObjectMethodV = REGISTER_STUB(env, callStaticObjectMethodV);
+
+	jni_env.ptr_callStaticVoidMethodV = REGISTER_STUB(env, callStaticMethodV);
+	jni_env.ptr_callStaticObjectMethodV = jni_env.ptr_callStaticVoidMethodV;
+	jni_env.ptr_callStaticBooleanMethodV = jni_env.ptr_callStaticVoidMethodV;
+	jni_env.ptr_callStaticByteMethodV = jni_env.ptr_callStaticVoidMethodV;
+	jni_env.ptr_callStaticCharMethodV = jni_env.ptr_callStaticVoidMethodV;
+	jni_env.ptr_callStaticShortMethodV = jni_env.ptr_callStaticVoidMethodV;
+	jni_env.ptr_callStaticIntMethodV = jni_env.ptr_callStaticVoidMethodV;
+	jni_env.ptr_callStaticLongMethodV = jni_env.ptr_callStaticVoidMethodV;
+	jni_env.ptr_callStaticFloatMethodV = jni_env.ptr_callStaticVoidMethodV;
+	jni_env.ptr_callStaticDoubleMethodV = jni_env.ptr_callStaticVoidMethodV;
+
 	jni_env.ptr_getStaticMethodID = REGISTER_STUB(env, getStaticMethodID);
 	jni_env.ptr_getArrayLength = REGISTER_STUB(env, getArrayLength);
 	jni_env.ptr_getIntArrayRegion = REGISTER_STUB(env, getIntArrayRegion);
@@ -118,11 +128,7 @@ void Silene::JniState::emu_deleteLocalRef(Environment& env, std::uint32_t java_e
 	env.jni().remove_ref(local_ref);
 }
 
-void Silene::JniState::emu_callStaticVoidMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id) {
-	env.jni().get_fn(local_ref, method_id)(env);
-}
-
-void Silene::JniState::emu_callStaticObjectMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id) {
+void Silene::JniState::emu_callStaticMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id) {
 	// hopefully, the method we call correctly sets the return type
 	env.jni().get_fn(local_ref, method_id)(env);
 }

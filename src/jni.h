@@ -312,8 +312,7 @@ class JniState {
 	static std::uint32_t emu_findClass(Environment& env, std::uint32_t java_env, std::uint32_t name_ptr);
 	static std::uint32_t emu_getStaticMethodID(Environment& env, std::uint32_t java_env, std::uint32_t class_ptr, std::uint32_t name_ptr, std::uint32_t signature_ptr);
 
-	static void emu_callStaticObjectMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id);
-	static void emu_callStaticVoidMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id);
+	static void emu_callStaticMethodV(Environment& env, std::uint32_t java_env, std::uint32_t local_ref, std::uint32_t method_id);
 
 	StaticJavaClass::JniFunction get_fn(std::uint32_t class_id, std::uint32_t method_id) const;
 

@@ -2,7 +2,7 @@
 
 #include <spdlog/fmt/ranges.h>
 
-std::uint32_t Elf::Loader::resolve_sym_addr(const std::string_view& sym_name) {
+std::uint32_t Elf::Loader::resolve_sym_addr(std::string_view sym_name) {
 	auto symbol_str = std::string(sym_name);
 
 	// symbol stubs take precedence over other symbols
@@ -343,14 +343,14 @@ void Elf::Loader::set_symbol_fallback_addr(std::uint32_t vaddr) {
 	this->_symbol_stub_addr = vaddr;
 }
 
-void Elf::Loader::add_stub_symbol(std::uint32_t vaddr, const std::string_view& symbol) {
+void Elf::Loader::add_stub_symbol(std::uint32_t vaddr, std::string_view symbol) {
 	auto sym_str = std::string(symbol);
 	this->_symbol_stubs[sym_str] = vaddr;
 
 	spdlog::info("adding stub symbol {} at {:#08x}", symbol, vaddr);
 }
 
-std::uint32_t Elf::Loader::get_symbol_addr(const std::string_view& symbol) const {
+std::uint32_t Elf::Loader::get_symbol_addr(std::string_view symbol) const {
 	auto symbol_str = std::string(symbol);
 	if (auto it = this->_loaded_symbols.find(symbol_str); it != this->_loaded_symbols.end()) {
 		return it->second;
@@ -359,7 +359,7 @@ std::uint32_t Elf::Loader::get_symbol_addr(const std::string_view& symbol) const
 	return 0;
 }
 
-bool Elf::Loader::has_symbol(const std::string_view& symbol) const {
+bool Elf::Loader::has_symbol(std::string_view symbol) const {
 	auto symbol_str = std::string(symbol);
 	return this->_loaded_symbols.contains(symbol_str);
 }

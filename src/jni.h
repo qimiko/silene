@@ -341,7 +341,7 @@ public:
 	/**
 	 * stores a reference to a string variable, like a jstring
 	 */
-	std::uint32_t create_string_ref(const std::string_view& str);
+	std::uint32_t create_string_ref(std::string_view str);
 
 	/**
 	 * Stores a reference to a generic variable

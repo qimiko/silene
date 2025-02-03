@@ -158,7 +158,7 @@ Silene::JniState::RefType& Silene::JniState::get_ref_value(std::uint32_t vaddr) 
 	return this->_object_refs.at(vaddr);
 }
 
-std::uint32_t Silene::JniState::create_string_ref(const std::string_view& str) {
+std::uint32_t Silene::JniState::create_string_ref(std::string_view str) {
 	return this->create_ref(std::string(str));
 }
 

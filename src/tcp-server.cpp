@@ -57,7 +57,7 @@ void TcpServer::accept() {
 	}
 }
 
-void TcpServer::write(const std::string_view& data) {
+void TcpServer::write(std::string_view data) {
 	if (this->_client_fd == -1) {
 		return;
 	}

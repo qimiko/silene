@@ -58,7 +58,7 @@ private:
 
 	std::unordered_map<std::string, std::uint32_t /* vaddr */> _symbol_stubs{};
 
-	std::uint32_t resolve_sym_addr(const std::string_view& sym_name);
+	std::uint32_t resolve_sym_addr(std::string_view sym_name);
 
 	/**
 	 * performs the relocations that are specified in the relocations table at table_start.
@@ -78,8 +78,8 @@ public:
 		this->_init_functions.clear();
 	}
 
-	std::uint32_t get_symbol_addr(const std::string_view& symbol) const;
-	bool has_symbol(const std::string_view& symbol) const;
+	std::uint32_t get_symbol_addr(std::string_view symbol) const;
+	bool has_symbol(std::string_view symbol) const;
 
 	void set_symbol_fallback_addr(std::uint32_t vaddr);
 
@@ -97,7 +97,7 @@ public:
 	 * adds a stubbed symbol
 	 * caller should set the last bit if it's a thumb instruction
 	 */
-	void add_stub_symbol(std::uint32_t vaddr, const std::string_view& symbol);
+	void add_stub_symbol(std::uint32_t vaddr, std::string_view symbol);
 
 	Loader(PagedMemory& memory) : _memory(memory) {}
 };

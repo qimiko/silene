@@ -29,7 +29,7 @@ public:
 
 	bool connection_alive() const;
 
-	void write(const std::string_view& data);
+	void write(std::string_view data);
 
 	TcpServer(const TcpServer&) = delete;
 	TcpServer(TcpServer&&) = delete;

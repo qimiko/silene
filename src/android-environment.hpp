@@ -92,7 +92,7 @@ public:
 	void run_func(std::uint32_t vaddr) override;
 
 	template <typename R = void, typename... Args>
-	R call_symbol(const std::string_view& symbol, Args... args) {
+	R call_symbol(std::string_view symbol, Args... args) {
 		// todo: potentially template magic to make this easier
 		auto symbol_addr = this->program_loader().get_symbol_addr(symbol);
 		if (symbol_addr == 0) {

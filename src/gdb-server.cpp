@@ -33,7 +33,7 @@ T parse_hex(const char* msg, std::uint32_t begin, std::uint32_t end) {
 	return value;
 }
 
-std::uint8_t calculate_checksum(const std::string_view& message) {
+std::uint8_t calculate_checksum(std::string_view message) {
 	return std::accumulate(message.begin(), message.end(), 0) % 256;
 }
 
@@ -82,7 +82,7 @@ std::string to_hex_string(const std::span<std::uint8_t>& s) {
 	return ss.str();
 }
 
-std::vector<std::uint8_t> from_hex_string(const std::string_view& s) {
+std::vector<std::uint8_t> from_hex_string(std::string_view s) {
 	auto data_size = s.length() / 2;
 	std::vector<std::uint8_t> data{};
 
@@ -103,7 +103,7 @@ void GdbServer::begin_connection(const std::string& ip, std::uint16_t port) {
 	this->_tcp_server.accept();
 }
 
-std::optional<std::string_view> GdbServer::read_message(const std::string_view& message) {
+std::optional<std::string_view> GdbServer::read_message(std::string_view message) {
 		if (message.empty()) {
 			return std::nullopt;
 		}
@@ -132,7 +132,7 @@ std::optional<std::string_view> GdbServer::read_message(const std::string_view& 
 		return command;
 }
 
-void GdbServer::send_message(const std::string_view& message) {
+void GdbServer::send_message(std::string_view message) {
 	std::uint32_t checksum = calculate_checksum(message);
 
 	std::stringstream ss;
@@ -149,7 +149,7 @@ void GdbServer::send_message(const std::string_view& message) {
 	this->_tcp_server.write(ss.str());
 }
 
-bool GdbServer::dispatch_set(const std::string_view& command) {
+bool GdbServer::dispatch_set(std::string_view command) {
 	// commands that begin with Q
 	if (command == "StartNoAckMode") {
 		this->send_message("OK");
@@ -161,7 +161,7 @@ bool GdbServer::dispatch_set(const std::string_view& command) {
 	return false;
 }
 
-bool GdbServer::dispatch_query(const std::string_view& command) {
+bool GdbServer::dispatch_query(std::string_view command) {
 	// commands that begin with q
 	auto separator_pos = command.find(':');
 
@@ -245,7 +245,7 @@ void GdbServer::step() {
 	this->_halt_on_next = true;
 }
 
-bool GdbServer::dispatch_v(const std::string_view& command) {
+bool GdbServer::dispatch_v(std::string_view command) {
 	// commands that begin with v
 	auto separator_pos = command.find(';');
 
@@ -275,7 +275,7 @@ bool GdbServer::dispatch_v(const std::string_view& command) {
 	return true;
 }
 
-bool GdbServer::dispatch_command(const std::string_view& command) {
+bool GdbServer::dispatch_command(std::string_view command) {
 	if (command.empty()) {
 		return false;
 	}

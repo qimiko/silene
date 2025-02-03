@@ -50,15 +50,15 @@ private:
 	 * reads a message from the tcp stream
 	 * if there was an invalid message, then no value is returned
 	 */
-	std::optional<std::string_view> read_message(const std::string_view& message);
+	std::optional<std::string_view> read_message(std::string_view message);
 
-	void send_message(const std::string_view& data);
+	void send_message(std::string_view data);
 
-	bool dispatch_query(const std::string_view& command);
-	bool dispatch_set(const std::string_view& command);
-	bool dispatch_v(const std::string_view& command);
+	bool dispatch_query(std::string_view command);
+	bool dispatch_set(std::string_view command);
+	bool dispatch_v(std::string_view command);
 
-	bool dispatch_command(const std::string_view& command);
+	bool dispatch_command(std::string_view command);
 
 	void read_message();
 

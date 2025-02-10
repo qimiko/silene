@@ -69,7 +69,7 @@ std::uint32_t LibcState::allocate_memory(std::uint32_t size, bool zero_mem) {
 		// we can just allocate some large chunk idk
 		auto next = this->_memory.get_next_page_aligned_addr();
 
-		auto base_heap_size = 0x1000000;
+		auto base_heap_size = std::max(0x1000000u, size);
 		this->_memory.allocate(base_heap_size); // i think this is 16mb
 
 		_allocated_chunks.try_emplace(next, next, base_heap_size, true, nullptr, _chunk_tail);
@@ -114,6 +114,8 @@ std::uint32_t LibcState::allocate_memory(std::uint32_t size, bool zero_mem) {
 void LibcState::free_memory(std::uint32_t vaddr) {
 	if (!_allocated_chunks.contains(vaddr)) {
 		spdlog::warn("attempted to free unallocated chunk at {:#010x}", vaddr);
+		throw std::runtime_error("f");
+
 		return;
 	}
 

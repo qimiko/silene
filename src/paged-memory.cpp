@@ -88,11 +88,11 @@ void PagedMemory::allocate_stack(std::uint32_t stack_size) {
 
 void PagedMemory::allocate(std::uint32_t bytes) {
 	if (this->_max_addr > UINT32_MAX - bytes) {
-		spdlog::error("memory has overrun the max size. not good!");
+		spdlog::error("memory has overrun the max size ({:#010x})", this->_max_addr);
 	}
 
 	if (this->_max_addr + bytes > this->_stack_min) {
-		spdlog::warn("memory is beginning to overrun the stack!");
+		spdlog::warn("memory is beginning to overrun the stack ({:#010x})", this->_max_addr);
 	}
 	this->_max_addr += bytes;
 };
@@ -127,10 +127,6 @@ std::uint32_t PagedMemory::get_next_page_aligned_addr() {
 
 void PagedMemory::copy(std::uint32_t vaddr, void* src, std::uint32_t length) {
 	std::memcpy(this->_backing_memory + vaddr, src, length);
-
-	if (this->_max_addr < vaddr + length) {
-		this->_max_addr = vaddr + length;
-	}
 }
 
 void PagedMemory::set(std::uint32_t vaddr, std::uint8_t src, std::uint32_t length) {

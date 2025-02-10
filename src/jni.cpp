@@ -51,6 +51,8 @@ void Silene::JniState::pre_init(const StateHolder& env) {
 
 	vm.ptr_self = vm_write_addr;
 
+	this->_memory.allocate(sizeof(JavaVM));
+
 	this->_memory.copy(vm_write_addr, &vm, sizeof(JavaVM));
 	this->_vm_ptr = vm_write_addr;
 
@@ -65,6 +67,8 @@ void Silene::JniState::pre_init(const StateHolder& env) {
 	}
 
 	jni_env.ptr_self = env_write_addr;
+
+	this->_memory.allocate(sizeof(JNIEnv));
 
 	this->_memory.copy(env_write_addr, &jni_env, sizeof(JNIEnv));
 	this->_env_ptr = env_write_addr;

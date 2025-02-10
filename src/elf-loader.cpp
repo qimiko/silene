@@ -340,6 +340,11 @@ std::uint32_t Elf::Loader::map_elf(const Elf::File& elf) {
 
 		auto start_addr = load_bias + segment.segment_virtual_address;
 
+		auto next_addr = this->_memory.get_next_addr();
+		if (next_addr < start_addr) {
+			this->_memory.allocate(start_addr - next_addr);
+		}
+
 		// keep our bss safe
 		this->_memory.allocate(segment.segment_memory_size);
 

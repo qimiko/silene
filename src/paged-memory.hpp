@@ -133,7 +133,7 @@ public:
 	 */
 	std::uint32_t get_next_page_aligned_addr();
 
-	void copy(std::uint32_t vaddr, void* src, std::uint32_t length);
+	void copy(std::uint32_t vaddr, const void* src, std::uint32_t length);
 	void set(std::uint32_t vaddr, std::uint8_t value, std::uint32_t length);
 };
 

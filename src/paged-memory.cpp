@@ -130,7 +130,7 @@ std::uint32_t PagedMemory::get_next_page_aligned_addr() {
 	return next_addr;
 }
 
-void PagedMemory::copy(std::uint32_t vaddr, void* src, std::uint32_t length) {
+void PagedMemory::copy(std::uint32_t vaddr, const void* src, std::uint32_t length) {
 	std::memcpy(this->_backing_memory + vaddr, src, length);
 }
 

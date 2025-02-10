@@ -11,4 +11,9 @@ std::int32_t emu_close(Environment& env, std::int32_t fd) {
 	return close(fd);
 }
 
+std::uint32_t emu_alarm(Environment& env, std::uint32_t seconds) {
+	spdlog::info("TODO: alarm({})", seconds);
+	return 0;
+}
+
 #endif

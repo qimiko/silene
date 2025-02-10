@@ -22,6 +22,7 @@
 #include "libc/semaphore.h"
 #include "libc/unistd.h"
 #include "libc/inet.h"
+#include "libc/signal.h"
 
 #include "kernel/kernel.h"
 
@@ -409,6 +410,7 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, sscanf);
 	REGISTER_FN(env, setjmp);
 	REGISTER_FN(env, longjmp);
+	REGISTER_FN(env, sigsetjmp);
 	REGISTER_FN(env, fprintf);
 	REGISTER_FN(env, fputc);
 	REGISTER_FN(env, strtol);
@@ -422,6 +424,7 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, gettimeofday);
 	REGISTER_FN(env, time);
 	REGISTER_FN(env, clock_gettime);
+	REGISTER_FN(env, localtime);
 	REGISTER_FN(env, getenv);
 	REGISTER_FN(env, lrand48);
 	REGISTER_FN(env, arc4random);
@@ -435,6 +438,8 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, inet_pton);
 	REGISTER_FN(env, getaddrinfo);
 	REGISTER_FN(env, freeaddrinfo);
+	REGISTER_FN(env, sigaction);
+	REGISTER_FN(env, alarm);
 
 	auto ctype_addr = this->_memory.get_next_word_addr();
 	this->_memory.allocate(sizeof(emu__ctype_));

@@ -18,11 +18,13 @@ void emu___cxa_finalize(Environment& env, std::uint32_t obj) {
 };
 
 uint32_t emu___gnu_Unwind_Find_exidx(Environment& env, uint32_t pc, uint32_t pcount_ptr) {
-	spdlog::info("TODO: __gnu_Unwind_Find_exidx");
-	// TODO: return address of ARM.exidx section for c++ exception handling
-	// see https://bugzilla.mozilla.org/show_bug.cgi?id=930627 for example
-	// returning 0 should be safe?
-	return 0;
+	auto [begin, pcount] = env.program_loader().find_exidx(pc);
+
+	if (pcount_ptr != 0) {
+		env.memory_manager().write_word(pcount_ptr, pcount);
+	}
+
+	return begin;
 }
 
 void emu___stack_chk_fail(Environment& env) {

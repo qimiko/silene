@@ -100,7 +100,7 @@ void Elf::Loader::relocate(const Elf::File& elf, LoaderState state, std::uint32_
 	}
 }
 
-void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint32_t reloc_offset, const std::span<DynamicSectionEntry>& dynamic_section) {
+Elf::Loader::LoaderState Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint32_t reloc_offset, std::span<DynamicSectionEntry> dynamic_section) {
 	// parse necessary details
 	// not a big fan of this but it'll do.. for now
 
@@ -187,6 +187,8 @@ void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint3
 			case DynamicSectionTag::FiniArraySize:
 				info.fini_array_count = dynamic.value / 4;
 				break;
+			case DynamicSectionTag::SharedObjectName:
+				info.name_offset = dynamic.value;
 			default:
 				spdlog::warn("unrecognized dynamic entry: {:#x}",
 					static_cast<std::uint32_t>(dynamic.tag)
@@ -196,15 +198,17 @@ void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint3
 	}
 
 	// todo: look into loading dependencies when needed
+	auto string_table_addr = base_addr + info.string_table_offset;
+	auto so_name = info.name_offset != 0
+		? this->_memory.read_bytes<char>(string_table_addr + info.name_offset)
+		: "";
 
 	LoaderState state = {
-		base_addr, reloc_offset, info
+		base_addr, reloc_offset, info, so_name
 	};
 
 	// load addresses into global symbol table
 	// this happens first, as some relocations may depend on the existence of a symbol in the binary
-
-	auto string_table_addr = state.base_address + state.dynamic.string_table_offset;
 
 	auto symbol_table_addr = base_addr + info.symbol_table_offset;
 	auto symbol_table_ptr = this->_memory.read_bytes<SymbolTableEntry>(symbol_table_addr);
@@ -289,6 +293,8 @@ void Elf::Loader::link(const Elf::File& elf, std::uint32_t base_addr, std::uint3
 		auto fini_size = info.fini_array_count;
 	}
 	*/
+
+	return state;
 }
 
 std::uint32_t Elf::Loader::map_elf(const Elf::File& elf) {
@@ -299,6 +305,8 @@ std::uint32_t Elf::Loader::map_elf(const Elf::File& elf) {
 	// for executables, this should be null (as they are the first thing loaded)
 	auto load_bias = this->_memory.get_next_page_aligned_addr();
 	auto reloc_offset = 0u;
+	auto exidx_offset = 0u;
+	auto exidx_size = 0u;
 
 	// in ghidra, this ends up being 0x10000 - bias = 0xf000
 	spdlog::info("loading object with bias {:#08x}", load_bias);
@@ -308,6 +316,11 @@ std::uint32_t Elf::Loader::map_elf(const Elf::File& elf) {
 	for (const auto& segment : elf.program_headers()) {
 		if (segment.type == ProgramSegmentType::ProgramHeaderTable) {
 			reloc_offset = segment.segment_offset;
+		}
+
+		if (segment.type == ProgramSegmentType::ArmExceptionIdx) {
+			exidx_offset = load_bias + segment.segment_virtual_address;
+			exidx_size = segment.segment_memory_size;
 		}
 
 		if (segment.type == ProgramSegmentType::Dynamic) {
@@ -334,7 +347,11 @@ std::uint32_t Elf::Loader::map_elf(const Elf::File& elf) {
 		this->_memory.copy(start_addr, file_mem + start_offset, length);
 	}
 
-	this->link(elf, load_bias, reloc_offset, dynamic_segment);
+	auto state = this->link(elf, load_bias, reloc_offset, dynamic_segment);
+	state.exidx_offset = exidx_offset;
+	state.exidx_size = exidx_size;
+
+	_loaded_binaries.push_back(std::move(state));
 
 	return load_bias + elf.header()->entry_point;
 }
@@ -371,3 +388,49 @@ std::optional<std::string> Elf::Loader::find_got_entry(std::uint32_t vaddr) cons
 
 	return std::nullopt;
 }
+
+std::pair<std::uint32_t, std::uint32_t> Elf::Loader::find_exidx(std::uint32_t vaddr) const {
+	auto nearest_library = find_nearest_library(vaddr);
+	if (!nearest_library) {
+		return {0, 0};
+	}
+
+	return {nearest_library->exidx_offset, nearest_library->exidx_size/8};
+}
+
+std::optional<Elf::Loader::LoaderState> Elf::Loader::find_nearest_library(std::uint32_t vaddr) const {
+	auto nearest = std::find_if_not(this->_loaded_binaries.rbegin(), this->_loaded_binaries.rend(), [vaddr](const auto& b) {
+		return b.base_address >= vaddr;
+	});
+
+	if (nearest == this->_loaded_binaries.rend()) {
+		return std::nullopt;
+	}
+
+	return *nearest;
+}
+
+
+std::optional<std::pair<std::string, std::string>> Elf::Loader::find_nearest_symbol(std::uint32_t vaddr) const {
+	auto nearest_library = find_nearest_library(vaddr);
+	if (!nearest_library) {
+		return std::nullopt;
+	}
+
+	std::vector<std::pair<std::string, std::uint32_t>> sorted_symbols{_loaded_symbols.size()};
+
+	std::partial_sort_copy(this->_loaded_symbols.begin(), this->_loaded_symbols.end(), sorted_symbols.begin(), sorted_symbols.end(), [](const auto& a, const auto& b){
+		return a.second > b.second;
+	});
+
+	auto nearest = std::find_if(sorted_symbols.begin(), sorted_symbols.end(), [vaddr](const auto& p) {
+		return p.second <= vaddr;
+	});
+
+	if (nearest == sorted_symbols.end()) {
+		return std::nullopt;
+	}
+
+	return std::pair<std::string, std::string>{nearest_library->name, nearest->first};
+}
+

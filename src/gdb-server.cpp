@@ -72,7 +72,7 @@ const char* reg_description() {
 </feature>)";
 }
 
-std::string to_hex_string(const std::span<std::uint8_t>& s) {
+std::string to_hex_string(std::span<std::uint8_t> s) {
 	std::stringstream ss;
 
 	for (const auto& c : s) {

@@ -261,6 +261,20 @@ void AndroidEnvironment::dump_state() {
 		regs[8], regs[9], regs[10], regs[11],
 		regs[12], regs[13], regs[14], regs[15]
 	);
+
+	auto nearest_lr = program_loader().find_nearest_symbol(regs[14]);
+	if (nearest_lr) {
+		auto [lib_name, sym_name] = *nearest_lr;
+		auto sym_addr = program_loader().get_symbol_addr(sym_name);
+		spdlog::info("lr: {}:{}+{:#x}", lib_name, sym_name, regs[14] - sym_addr);
+	}
+
+	auto nearest_pc = program_loader().find_nearest_symbol(regs[15]);
+	if (nearest_pc) {
+		auto [lib_name, sym_name] = *nearest_lr;
+		auto sym_addr = program_loader().get_symbol_addr(sym_name);
+		spdlog::info("pc: {}:{}+{:#x}", lib_name, sym_name, regs[15] - sym_addr);
+	}
 }
 
 void AndroidEnvironment::begin_debugging() {

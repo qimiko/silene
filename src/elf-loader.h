@@ -37,13 +37,20 @@ private:
 		std::uint32_t fini_array_offset{0};
 		std::uint32_t fini_array_count{0};
 		std::uint32_t fini_function_offset{0};
+
+		std::uint32_t name_offset{0};
 	};
 
 	struct LoaderState {
 		std::uint32_t base_address;
 		std::uint32_t reloc_offset;
 		DynamicInfo dynamic;
+		std::string name;
+		std::uint32_t exidx_offset{};
+		std::uint32_t exidx_size{};
 	};
+
+	std::vector<LoaderState> _loaded_binaries{};
 
 	PagedMemory& _memory;
 	std::uint32_t _load_addr{0};
@@ -60,12 +67,14 @@ private:
 
 	std::uint32_t resolve_sym_addr(std::string_view sym_name);
 
+	std::optional<LoaderState> find_nearest_library(std::uint32_t vaddr) const;
+
 	/**
 	 * performs the relocations that are specified in the relocations table at table_start.
 	 */
 	void relocate(const Elf::File& elf, LoaderState state, std::uint32_t table_offset, std::uint32_t count);
 
-	void link(const Elf::File& elf, std::uint32_t base_addr, std::uint32_t reloc_offset, const std::span<DynamicSectionEntry>& dynamic_section);
+	LoaderState link(const Elf::File& elf, std::uint32_t base_addr, std::uint32_t reloc_offset, std::span<DynamicSectionEntry> dynamic_section);
 
 public:
 	std::uint32_t map_elf(const Elf::File& elf);
@@ -92,6 +101,10 @@ public:
 	}
 
 	std::optional<std::string> find_got_entry(std::uint32_t vaddr) const;
+
+	std::pair<std::uint32_t, std::uint32_t> find_exidx(std::uint32_t vaddr) const;
+
+	std::optional<std::pair<std::string, std::string>> find_nearest_symbol(std::uint32_t vaddr) const;
 
 	/**
 	 * adds a stubbed symbol

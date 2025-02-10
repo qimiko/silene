@@ -23,6 +23,8 @@
 #include "libc/unistd.h"
 #include "libc/inet.h"
 #include "libc/signal.h"
+#include "libc/poll.h"
+#include "libc/errno.h"
 
 #include "kernel/kernel.h"
 
@@ -113,9 +115,13 @@ std::uint32_t LibcState::allocate_memory(std::uint32_t size, bool zero_mem) {
 }
 
 void LibcState::free_memory(std::uint32_t vaddr) {
+	if (vaddr == 0) {
+		return;
+	}
+
 	if (!_allocated_chunks.contains(vaddr)) {
 		spdlog::warn("attempted to free unallocated chunk at {:#010x}", vaddr);
-		throw std::runtime_error("f");
+		throw std::runtime_error("double free detected");
 
 		return;
 	}
@@ -319,6 +325,10 @@ void LibcState::set_strtok_buffer(std::uint32_t x) {
 	this->_strtok_buffer = x;
 }
 
+std::uint32_t LibcState::get_errno_addr() const {
+	return this->_errno_addr;
+}
+
 void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, sin);
 	REGISTER_FN(env, sinf);
@@ -397,7 +407,11 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, fwrite);
 	REGISTER_FN(env, fputs);
 	REGISTER_FN(env, getsockopt);
+	REGISTER_FN(env, connect);
+	REGISTER_FN(env, getpeername);
+	REGISTER_FN(env, getsockname);
 	REGISTER_FN(env, socket);
+	REGISTER_FN(env, send);
 	REGISTER_FN(env, __stack_chk_fail);
 	REGISTER_FN(env, memcmp);
 	REGISTER_FN(env, __android_log_print);
@@ -414,6 +428,7 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, fprintf);
 	REGISTER_FN(env, fputc);
 	REGISTER_FN(env, strtol);
+	REGISTER_FN(env, strtoll);
 	REGISTER_FN(env, strtoul);
 	REGISTER_FN(env, strtod);
 	REGISTER_FN(env, strstr);
@@ -421,6 +436,7 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, strdup);
 	REGISTER_FN(env, strchr);
 	REGISTER_FN(env, strrchr);
+	REGISTER_FN(env, strerror_r);
 	REGISTER_FN(env, gettimeofday);
 	REGISTER_FN(env, time);
 	REGISTER_FN(env, clock_gettime);
@@ -436,10 +452,15 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, isalpha);
 	REGISTER_FN(env, close);
 	REGISTER_FN(env, inet_pton);
+	REGISTER_FN(env, inet_ntop);
 	REGISTER_FN(env, getaddrinfo);
 	REGISTER_FN(env, freeaddrinfo);
 	REGISTER_FN(env, sigaction);
 	REGISTER_FN(env, alarm);
+	REGISTER_FN(env, fcntl);
+	REGISTER_FN(env, poll);
+	REGISTER_FN(env, recv);
+	REGISTER_FN(env, __errno);
 
 	auto ctype_addr = this->_memory.get_next_word_addr();
 	this->_memory.allocate(sizeof(emu__ctype_));
@@ -456,6 +477,12 @@ void LibcState::pre_init(const StateHolder& env) {
 	this->_memory.copy(toupper_tab_addr, &emu__toupper_tab_, sizeof(emu__toupper_tab_));
 	env.program_loader().add_stub_symbol(toupper_tab_addr, "_toupper_tab_");
 
+	auto errno_addr = this->_memory.get_next_word_addr();
+	this->_memory.allocate(0x4);
+	this->_memory.write_word(errno_addr, 0x0);
+	_errno_addr = errno_addr;
+
+	REGISTER_SYSCALL(env, fcntl, 0x37);
 	REGISTER_SYSCALL(env, openat, 0x142);
 
 	REGISTER_FN_RN(env, emu_glGetString, "glGetString");

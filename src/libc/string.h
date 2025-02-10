@@ -54,6 +54,10 @@ std::uint32_t emu_memcpy(Environment& env, std::uint32_t destination_ptr, std::u
 }
 
 std::uint32_t emu_memmove(Environment& env, std::uint32_t destination_ptr, std::uint32_t source_ptr, std::uint32_t num) {
+	if (num == 0) {
+		return destination_ptr;
+	}
+
 	auto destination = env.memory_manager().read_bytes<std::uint8_t>(destination_ptr);
 	auto source = env.memory_manager().read_bytes<std::uint8_t>(source_ptr);
 
@@ -180,6 +184,13 @@ std::int32_t emu_strrchr(Environment& env, std::uint32_t str_ptr, std::int32_t c
 	auto offset = reinterpret_cast<std::ptrdiff_t>(r - str);
 
 	return str_ptr + static_cast<std::uint32_t>(offset);
+}
+
+std::uint32_t emu_strerror_r(Environment& env, std::int32_t errnum, std::uint32_t buf, std::uint32_t buflen) {
+	spdlog::info("TODO: strerror_r({}, {:#x})", errnum, buflen);
+	env.memory_manager().write_byte(buf, 0x0);
+
+	return buf;
 }
 
 #endif

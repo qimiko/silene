@@ -53,7 +53,12 @@ class LibcState {
 
 	void log_allocator_state();
 
+	// this doesn't support multiple threads, too bad?
+	std::uint32_t _errno_addr{0u};
+
 public:
+
+	std::uint32_t get_errno_addr() const;
 
 	std::uint32_t allocate_memory(std::uint32_t size, bool zero_mem = false);
 	void free_memory(std::uint32_t vaddr);

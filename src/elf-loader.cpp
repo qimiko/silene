@@ -189,6 +189,7 @@ Elf::Loader::LoaderState Elf::Loader::link(const Elf::File& elf, std::uint32_t b
 				break;
 			case DynamicSectionTag::SharedObjectName:
 				info.name_offset = dynamic.value;
+				break;
 			default:
 				spdlog::warn("unrecognized dynamic entry: {:#x}",
 					static_cast<std::uint32_t>(dynamic.tag)

@@ -52,8 +52,12 @@ std::string perform_printf(Environment& env, const std::string& format_str, T& v
 			case 's':
 				if (in_format) {
 					auto ptr = v.template next<std::uint32_t>();
-					auto substr = env.memory_manager().read_bytes<char>(ptr);
-					ss << substr;
+					if (ptr == 0) {
+						ss << "(null)";
+					} else {
+						auto substr = env.memory_manager().read_bytes<char>(ptr);
+						ss << substr;
+					}
 
 					in_format = false;
 				} else {
@@ -154,7 +158,10 @@ std::int32_t emu_fclose(Environment& env, std::uint32_t file) {
 }
 
 std::uint32_t emu_fwrite(Environment& env, std::uint32_t buffer_ptr, std::uint32_t size, std::uint32_t count, std::uint32_t stream_ptr) {
-	spdlog::info("TODO: fwrite");
+	auto buffer = env.memory_manager().read_bytes<char>(buffer_ptr);
+	auto out_str = std::string_view {buffer, size * count};
+
+	spdlog::info("TODO: fwrite -> {}", out_str);
 
 	return 0;
 }
@@ -173,7 +180,9 @@ std::int32_t emu_fread(Environment& env, std::uint32_t buf_ptr, std::uint32_t si
 }
 
 std::int32_t emu_fputs(Environment& env, std::uint32_t str_ptr, std::uint32_t stream_ptr) {
-	spdlog::info("TODO: fputs");
+	auto str = env.memory_manager().read_bytes<char>(str_ptr);
+
+	spdlog::info("TODO: fputs -> {}", str);
 	return -1;
 }
 

@@ -42,6 +42,22 @@ std::int32_t emu_strtol(Environment& env, std::uint32_t begin_ptr, std::uint32_t
 	return x;
 }
 
+std::int64_t emu_strtoll(Environment& env, std::uint32_t begin_ptr, std::uint32_t end_ptr, std::int32_t base) {
+	auto begin = env.memory_manager().read_bytes<char>(begin_ptr);
+
+	char* end;
+	auto x = std::strtoll(begin, &end, base);
+
+	if (end_ptr != 0) {
+		auto offs = end - begin;
+		auto emu_end = begin_ptr + offs;
+
+		env.memory_manager().write_word(end_ptr, emu_end);
+	}
+
+	return x;
+}
+
 std::uint32_t emu_strtoul(Environment& env, std::uint32_t begin_ptr, std::uint32_t end_ptr, std::int32_t base) {
 	auto begin = env.memory_manager().read_bytes<char>(begin_ptr);
 

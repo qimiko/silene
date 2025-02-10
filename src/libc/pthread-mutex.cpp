@@ -181,7 +181,6 @@ void mutex_unlock(BionicMutex* mutex, std::uint16_t shared) {
 }
 
 std::int32_t emu_pthread_mutex_init(Environment& env, std::uint32_t mutex_ptr, std::uint32_t attr_ptr) {
-
 	auto mutex_obj = env.memory_manager().read_bytes<BionicMutex>(mutex_ptr);
 	std::memset(mutex_obj, 0, sizeof(BionicMutex));
 

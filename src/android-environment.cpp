@@ -271,7 +271,7 @@ void AndroidEnvironment::dump_state() {
 
 	auto nearest_pc = program_loader().find_nearest_symbol(regs[15]);
 	if (nearest_pc) {
-		auto [lib_name, sym_name] = *nearest_lr;
+		auto [lib_name, sym_name] = *nearest_pc;
 		auto sym_addr = program_loader().get_symbol_addr(sym_name);
 		spdlog::info("pc: {}:{}+{:#x}", lib_name, sym_name, regs[15] - sym_addr);
 	}

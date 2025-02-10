@@ -1,6 +1,11 @@
 #include "paged-memory.hpp"
 
 std::uint8_t* PagedMemory::ptr_to_addr(std::uint32_t vaddr) {
+	if (vaddr < EMU_PAGE_SIZE) [[unlikely]] {
+		spdlog::warn("translating invalid address {:#x}", vaddr);
+		throw std::runtime_error("null pointer exception!");
+	}
+
 	return _backing_memory + vaddr;
 }
 

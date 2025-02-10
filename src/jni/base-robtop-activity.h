@@ -14,4 +14,8 @@ std::uint32_t jni_get_user_id(Environment& env) {
 	return jni.create_string_ref(uuid);
 }
 
+bool jni_is_network_available(Environment& env) {
+	return true;
+}
+
 #endif

@@ -5,6 +5,7 @@
 
 #include "jni/base-robtop-activity.h"
 #include "jni/cocos-activity.h"
+#include "jni/simple-crypto.h"
 
 #define REGISTER_STATIC(CLASS, SIGNATURE, NAME) \
 	register_static(CLASS, SIGNATURE, &SyscallTranslator::translate_wrap<&jni_##NAME>)
@@ -56,8 +57,6 @@ void Silene::JniState::pre_init(const StateHolder& env) {
 	this->_memory.copy(vm_write_addr, &vm, sizeof(JavaVM));
 	this->_vm_ptr = vm_write_addr;
 
-	this->_memory.allocate(sizeof(JavaVM));
-
 	auto env_write_addr = this->_memory.get_next_addr();
 
 	if (env_write_addr & 1) {
@@ -73,9 +72,9 @@ void Silene::JniState::pre_init(const StateHolder& env) {
 	this->_memory.copy(env_write_addr, &jni_env, sizeof(JNIEnv));
 	this->_env_ptr = env_write_addr;
 
-	this->_memory.allocate(sizeof(JNIEnv));
-
 	REGISTER_STATIC("com/customRobTop/BaseRobTopActivity", "getUserID;()Ljava/lang/String;", get_user_id);
+	REGISTER_STATIC("com/customRobTop/BaseRobTopActivity", "isNetworkAvailable;()Z", is_network_available);
+	REGISTER_STATIC("com/customRobTop/SimpleCrypto", "loadAndDecryptFileToString;(Ljava/lang/String;)Ljava/lang/String;", decrypt_file_to_string);
 	REGISTER_STATIC("org/cocos2dx/lib/Cocos2dxActivity", "showMessageBox;(Ljava/lang/String;Ljava/lang/String;)V", show_message_box);
 }
 

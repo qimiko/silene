@@ -131,6 +131,11 @@ void SdlAppWindow::handle_key(SDL_KeyboardEvent& event) {
 void SdlAppWindow::handle_event(SDL_Event* event) {
 	ImGui_ImplSDL3_ProcessEvent(event);
 
+	// ignore events before init finished
+	if (_is_first_frame) {
+		return;
+	}
+
 	switch (event->type) {
 		case SDL_EVENT_MOUSE_BUTTON_DOWN:
 		case SDL_EVENT_MOUSE_BUTTON_UP: {

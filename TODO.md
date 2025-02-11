@@ -9,7 +9,6 @@ Naturally, these items may change as the progress progresses.
 - [ ] Sound!
   - [ ] Find something that offers the same metering API that FMOD does... maybe [SoLoud](https://solhsa.com/soloud/)
 - [ ] Improve the implementation for the `^(:?v?s?n?|s?n?)printf$` functions and `sscanf`
-- [ ] `qsort`.
 - [ ] Create a proper memory implementation. The current one is slow...
 
 ## Code quality
@@ -26,3 +25,4 @@ These can happen in any order, generally just as needed.
 - [ ] Isolate Geometry Dash and its implementation from the codebase
 - [ ] Keyboard support on 1.9+
 - [ ] Async loading
+- [ ] Native JNI integration

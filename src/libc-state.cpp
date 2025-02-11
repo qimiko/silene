@@ -446,6 +446,7 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, arc4random);
 	REGISTER_FN(env, ftime);
 	REGISTER_FN(env, srand48);
+	REGISTER_FN(env, qsort);
 	REGISTER_FN(env, tolower);
 	REGISTER_FN(env, isspace);
 	REGISTER_FN(env, isalnum);

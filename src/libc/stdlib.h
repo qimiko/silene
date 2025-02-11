@@ -116,4 +116,60 @@ void emu_srand48(Environment& env, std::int32_t seed) {
 	srand48(seed);
 }
 
+struct qsort_context {
+	Environment& env;
+	std::uint32_t comp_fn;
+	std::intptr_t emu_diff;
+};
+
+thread_local qsort_context* active_qsort = nullptr;
+
+int qsort_inner(const void* a, const void* b) {
+	if (active_qsort == nullptr) {
+		spdlog::warn("qsort context is incorrectly nullptr");
+		return 0;
+	}
+
+	auto context = reinterpret_cast<qsort_context*>(active_qsort);
+	auto& env = context->env;
+	auto& regs = env.current_cpu()->Regs();
+
+	auto emu_a = static_cast<std::uint32_t>(reinterpret_cast<std::intptr_t>(a) - context->emu_diff);
+	auto emu_b = static_cast<std::uint32_t>(reinterpret_cast<std::intptr_t>(b) - context->emu_diff);
+
+	regs[0] = emu_a;
+	regs[1] = emu_b;
+
+	context->env.run_func(context->comp_fn);
+
+	auto r = std::bit_cast<std::int32_t>(regs[0]);
+	return r;
+}
+
+// ptr - base = a
+// base + a = base
+
+void emu_qsort(Environment& env, std::uint32_t ptr, std::uint32_t count, std::uint32_t size, std::uint32_t comp_fn) {
+	// comp = (std::uint32_t a, std::uint32_t b) -> int
+
+	if (count < 2) {
+		return;
+	}
+
+	auto base = env.memory_manager().read_bytes<void>(ptr);
+	qsort_context context = {
+		.env = env,
+		.comp_fn = comp_fn,
+		.emu_diff = reinterpret_cast<std::intptr_t>(base) - ptr
+	};
+
+	active_qsort = &context;
+
+	// we could use qsort_r, but it's not available on android until android 14
+	// that's really odd considering its implementation was pulled from freebsd, but whatever
+	qsort(base, count, size, &qsort_inner);
+
+	active_qsort = nullptr;
+}
+
 #endif

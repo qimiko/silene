@@ -181,6 +181,8 @@ void mutex_unlock(BionicMutex* mutex, std::uint16_t shared) {
 }
 
 std::int32_t emu_pthread_mutex_init(Environment& env, std::uint32_t mutex_ptr, std::uint32_t attr_ptr) {
+	spdlog::info("pthread_mutex_init({:#x})", mutex_ptr);
+
 	auto mutex_obj = env.memory_manager().read_bytes<BionicMutex>(mutex_ptr);
 	std::memset(mutex_obj, 0, sizeof(BionicMutex));
 
@@ -219,6 +221,8 @@ std::int32_t emu_pthread_mutex_init(Environment& env, std::uint32_t mutex_ptr, s
 }
 
 std::uint32_t emu_pthread_mutex_lock(Environment& env, std::uint32_t mutex_ptr) {
+	spdlog::info("pthread_mutex_lock({:#x})", mutex_ptr);
+
 	if (mutex_ptr == 0) {
 		return 22; // EINVAL
 	}
@@ -242,6 +246,8 @@ std::uint32_t emu_pthread_mutex_lock(Environment& env, std::uint32_t mutex_ptr) 
 }
 
 std::uint32_t emu_pthread_mutex_unlock(Environment& env, std::uint32_t mutex_ptr) {
+	spdlog::info("pthread_mutex_unlock({:#x})", mutex_ptr);
+
 	if (mutex_ptr == 0) {
 		return 22; // EINVAL
 	}
@@ -281,6 +287,8 @@ std::uint32_t emu_pthread_mutex_unlock(Environment& env, std::uint32_t mutex_ptr
 }
 
 std::int32_t emu_pthread_mutex_destroy(Environment& env, std::uint32_t mutex_ptr) {
+	spdlog::info("pthread_mutex_destroy({:#x})", mutex_ptr);
+
 	auto mutex_obj = env.memory_manager().read_bytes<BionicMutex>(mutex_ptr);
 	auto old_state = std::atomic_load_explicit(&mutex_obj->state, std::memory_order_relaxed);
 

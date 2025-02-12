@@ -379,7 +379,10 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, pthread_mutex_lock);
 	REGISTER_FN(env, pthread_mutex_destroy);
 	REGISTER_FN(env, pthread_mutex_unlock);
+	REGISTER_FN(env, pthread_cond_init);
+	REGISTER_FN(env, pthread_cond_destroy);
 	REGISTER_FN(env, pthread_cond_broadcast);
+	REGISTER_FN(env, pthread_cond_signal);
 	REGISTER_FN(env, pthread_cond_wait);
 	REGISTER_FN(env, pthread_getspecific);
 	REGISTER_FN(env, pthread_setspecific);

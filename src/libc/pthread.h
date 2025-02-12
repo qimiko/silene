@@ -14,7 +14,10 @@ std::int32_t emu_pthread_mutex_init(Environment& env, std::uint32_t mutex_ptr, s
 std::uint32_t emu_pthread_mutex_lock(Environment& env, std::uint32_t mutex_ptr);
 std::uint32_t emu_pthread_mutex_unlock(Environment& env, std::uint32_t mutex_ptr);
 std::int32_t emu_pthread_mutex_destroy(Environment& env, std::uint32_t mutex_ptr);
+std::int32_t emu_pthread_cond_init(Environment& env, std::uint32_t cond_ptr, std::uint32_t attr_ptr);
 std::int32_t emu_pthread_cond_broadcast(Environment& env, std::uint32_t cond_ptr);
+std::int32_t emu_pthread_cond_signal(Environment& env, std::uint32_t cond_ptr);
+std::int32_t emu_pthread_cond_destroy(Environment& env, std::uint32_t cond_ptr);
 std::int32_t emu_pthread_cond_wait(Environment& env, std::uint32_t cond_ptr, std::uint32_t mutex_ptr);
 std::uint32_t emu_pthread_getspecific(Environment& env, std::int32_t key);
 std::int32_t emu_pthread_setspecific(Environment& env, std::int32_t key, std::uint32_t value);

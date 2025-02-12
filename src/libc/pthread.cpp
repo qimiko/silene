@@ -72,15 +72,6 @@ std::int32_t emu_pthread_exit(Environment& env, std::uint32_t ret_val_ptr) {
 	return 0;
 }
 
-std::int32_t emu_pthread_cond_broadcast(Environment& env, std::uint32_t cond_ptr) {
-	spdlog::info("TODO: pthread_cond_broadcast");
-	return 0;
-}
-
-std::int32_t emu_pthread_cond_wait(Environment& env, std::uint32_t cond_ptr, std::uint32_t mutex_ptr) {
-	spdlog::info("TODO: pthread_cond_wait");
-	return 0;
-}
 
 std::uint32_t emu_pthread_getspecific(Environment& env, std::int32_t key) {
 	spdlog::info("TODO: pthread_getspecific");
@@ -90,4 +81,83 @@ std::uint32_t emu_pthread_getspecific(Environment& env, std::int32_t key) {
 std::int32_t emu_pthread_setspecific(Environment& env, std::int32_t key, std::uint32_t value) {
 	spdlog::info("TODO: pthread_setspecific");
 	return 0;
+}
+
+// directly ripped from bionic, again
+// https://android.googlesource.com/platform/bionic/+/master/libc/bionic/pthread_cond.cpp
+// pthread_cond_t is a pointer to an atomic_uint32_t. i think this was exported publicly at some point?
+
+namespace {
+constexpr std::uint8_t BIONIC_COND_SHARED_MASK = 0x1;
+constexpr std::uint8_t BIONIC_COND_CLOCK_MASK = 0x2;
+constexpr std::uint8_t BIONIC_COND_FLAGS_MASK = BIONIC_COND_SHARED_MASK | BIONIC_COND_CLOCK_MASK;
+
+constexpr std::uint8_t BIONIC_COND_COUNTER_STEP = 0x4;
+
+std::int32_t __pthread_cond_pulse(Environment& env, std::uint32_t cond_ptr, std::int32_t thread_count) {
+	auto cond = env.memory_manager().read_bytes<std::atomic_uint32_t>(cond_ptr);
+  std::atomic_fetch_add_explicit(cond, BIONIC_COND_COUNTER_STEP, std::memory_order_relaxed);
+	std::atomic_notify_all(cond);
+  return 0;
+}
+
+std::int32_t __pthread_cond_timedwait(Environment& env, std::uint32_t cond_ptr, std::uint32_t mutex_ptr) {
+	auto cond = env.memory_manager().read_bytes<std::atomic_uint32_t>(cond_ptr);
+
+  auto old_state = std::atomic_load_explicit(cond, std::memory_order_relaxed);
+
+  emu_pthread_mutex_unlock(env, mutex_ptr);
+
+	std::atomic_wait(cond, old_state);
+
+  emu_pthread_mutex_lock(env, mutex_ptr);
+
+  return 0;
+}
+
+}
+
+std::int32_t emu_pthread_cond_init(Environment& env, std::uint32_t cond_ptr, std::uint32_t attr_ptr) {
+	spdlog::info("pthread_cond_init({:#x})", cond_ptr);
+
+	if (cond_ptr == 0) {
+		return 22; // EINVAL
+	}
+
+	auto cond = env.memory_manager().read_bytes<std::atomic_uint32_t>(cond_ptr);
+
+	auto init_state = 0u;
+	if (attr_ptr != 0) {
+		init_state = env.memory_manager().read_word(attr_ptr) & BIONIC_COND_FLAGS_MASK;
+	}
+	std::atomic_store_explicit(cond, init_state, std::memory_order_relaxed);
+
+	return 0;
+}
+
+std::int32_t emu_pthread_cond_destroy(Environment& env, std::uint32_t cond_ptr) {
+	spdlog::info("pthread_cond_destroy({:#x})", cond_ptr);
+
+	auto cond = env.memory_manager().read_bytes<std::atomic_uint32_t>(cond_ptr);
+	std::atomic_store_explicit(cond, 0xdeadc04d, std::memory_order_relaxed);
+
+	return 0;
+}
+
+std::int32_t emu_pthread_cond_broadcast(Environment& env, std::uint32_t cond_ptr) {
+	spdlog::info("pthread_cond_broadcast({:#x})", cond_ptr);
+
+	return __pthread_cond_pulse(env, cond_ptr, std::numeric_limits<std::int32_t>::max());
+}
+
+std::int32_t emu_pthread_cond_signal(Environment& env, std::uint32_t cond_ptr) {
+	spdlog::info("pthread_cond_signal({:#x})", cond_ptr);
+
+  return __pthread_cond_pulse(env, cond_ptr, 1);
+}
+
+std::int32_t emu_pthread_cond_wait(Environment& env, std::uint32_t cond_ptr, std::uint32_t mutex_ptr) {
+	spdlog::info("pthread_cond_wait({:#x}, {:#x})", cond_ptr, mutex_ptr);
+
+	return __pthread_cond_timedwait(env, cond_ptr, mutex_ptr);
 }

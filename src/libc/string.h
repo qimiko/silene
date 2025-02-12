@@ -193,4 +193,11 @@ std::uint32_t emu_strerror_r(Environment& env, std::int32_t errnum, std::uint32_
 	return buf;
 }
 
+std::uint32_t emu_strerror(Environment& env, std::int32_t errnum) {
+	// this leaks :(
+	auto mem = env.libc().allocate_memory(0x4);
+	env.memory_manager().write_word(mem, 0x00'00'33'3a);
+	return mem;
+}
+
 #endif

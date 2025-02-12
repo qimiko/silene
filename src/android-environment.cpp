@@ -255,25 +255,27 @@ void AndroidEnvironment::run_func(std::uint32_t vaddr) {
 
 void AndroidEnvironment::dump_state() {
 	auto& regs = _cpu->Regs();
+
 	spdlog::info("register states:\nr0:  {:#010x} r1:  {:#010x} r2:  {:#010x} r3:  {:#010x}\nr4:  {:#010x} r5:  {:#010x} r6:  {:#010x} r7:  {:#010x}\nr8:  {:#010x} r9:  {:#010x} r10: {:#010x} r11: {:#010x}\nr12: {:#010x} sp:  {:#010x} lr:  {:#010x} pc:  {:#010x}",
 		regs[0], regs[1], regs[2], regs[3],
 		regs[4], regs[5], regs[6], regs[7],
 		regs[8], regs[9], regs[10], regs[11],
 		regs[12], regs[13], regs[14], regs[15]
 	);
-
-	auto nearest_lr = program_loader().find_nearest_symbol(regs[14]);
-	if (nearest_lr) {
-		auto [lib_name, sym_name] = *nearest_lr;
-		auto sym_addr = program_loader().get_symbol_addr(sym_name);
-		spdlog::info("lr: {}:{}+{:#x}", lib_name, sym_name, regs[14] - sym_addr);
-	}
+	spdlog::info("current thread: {:#x}", _thread_id);
 
 	auto nearest_pc = program_loader().find_nearest_symbol(regs[15]);
 	if (nearest_pc) {
 		auto [lib_name, sym_name] = *nearest_pc;
 		auto sym_addr = program_loader().get_symbol_addr(sym_name);
 		spdlog::info("pc: {}:{}+{:#x}", lib_name, sym_name, regs[15] - sym_addr);
+	}
+
+	auto nearest_lr = program_loader().find_nearest_symbol(regs[14]);
+	if (nearest_lr) {
+		auto [lib_name, sym_name] = *nearest_lr;
+		auto sym_addr = program_loader().get_symbol_addr(sym_name);
+		spdlog::info("lr: {}:{}+{:#x}", lib_name, sym_name, regs[14] - sym_addr);
 	}
 }
 

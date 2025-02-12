@@ -77,6 +77,8 @@ public:
 	std::int32_t read_file(void* buf, std::uint32_t size, std::uint32_t count, std::uint32_t file_ref);
 	std::int32_t tell_file(std::uint32_t file_ref);
 
+	std::FILE* get_file(std::uint32_t file_ref) const;
+
 	void expose_file(std::string emu_name, std::string real_name);
 
 	LibcState(PagedMemory& memory) : _memory(memory) {}

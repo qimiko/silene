@@ -179,6 +179,20 @@ std::int32_t emu_fread(Environment& env, std::uint32_t buf_ptr, std::uint32_t si
 	return env.libc().read_file(buf, size, count, file_ref);
 }
 
+std::int32_t emu_fgets(Environment& env, std::uint32_t str_ptr, std::int32_t count, std::uint32_t file_ref) {
+	auto file = env.libc().get_file(file_ref);
+	if (file == nullptr) {
+		return 0;
+	}
+
+	auto str = env.memory_manager().read_bytes<char>(str_ptr);
+	if (std::fgets(str, count, file) == nullptr) {
+		return 0;
+	}
+
+	return str_ptr;
+}
+
 std::int32_t emu_fputs(Environment& env, std::uint32_t str_ptr, std::uint32_t stream_ptr) {
 	auto str = env.memory_manager().read_bytes<char>(str_ptr);
 

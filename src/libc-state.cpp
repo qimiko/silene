@@ -313,6 +313,15 @@ std::int32_t LibcState::tell_file(std::uint32_t file_ref) {
 	return static_cast<std::uint32_t>(std::ftell(file_ptr));
 }
 
+std::FILE* LibcState::get_file(std::uint32_t file_ref) const {
+	auto it = _open_files.find(file_ref);
+	if (it == _open_files.end()) {
+		spdlog::warn("tried to get unknown file {:#x}", file_ref);
+		return nullptr;
+	}
+	return it->second;
+}
+
 void LibcState::expose_file(std::string emu_name, std::string real_name) {
 	_exposed_files[emu_name] = real_name;
 }
@@ -409,6 +418,7 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, fread);
 	REGISTER_FN(env, fwrite);
 	REGISTER_FN(env, fputs);
+	REGISTER_FN(env, fgets);
 	REGISTER_FN(env, getsockopt);
 	REGISTER_FN(env, connect);
 	REGISTER_FN(env, getpeername);
@@ -440,6 +450,7 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, strchr);
 	REGISTER_FN(env, strrchr);
 	REGISTER_FN(env, strerror_r);
+	REGISTER_FN(env, strerror);
 	REGISTER_FN(env, gettimeofday);
 	REGISTER_FN(env, time);
 	REGISTER_FN(env, clock_gettime);
@@ -461,7 +472,16 @@ void LibcState::pre_init(const StateHolder& env) {
 	REGISTER_FN(env, freeaddrinfo);
 	REGISTER_FN(env, sigaction);
 	REGISTER_FN(env, alarm);
+	REGISTER_FN(env, write);
+	REGISTER_FN(env, read);
+	REGISTER_FN(env, getpid);
+	REGISTER_FN(env, getuid);
+	REGISTER_FN(env, geteuid);
+	REGISTER_FN(env, getgid);
+	REGISTER_FN(env, getegid);
 	REGISTER_FN(env, fcntl);
+	REGISTER_FN(env, open);
+	REGISTER_FN(env, fstat);
 	REGISTER_FN(env, poll);
 	REGISTER_FN(env, recv);
 	REGISTER_FN(env, __errno);
@@ -486,7 +506,9 @@ void LibcState::pre_init(const StateHolder& env) {
 	this->_memory.write_word(errno_addr, 0x0);
 	_errno_addr = errno_addr;
 
+	REGISTER_SYSCALL(env, open, 0x5);
 	REGISTER_SYSCALL(env, fcntl, 0x37);
+	REGISTER_SYSCALL(env, fstat, 0x6c);
 	REGISTER_SYSCALL(env, openat, 0x142);
 
 	REGISTER_FN_RN(env, emu_glGetString, "glGetString");

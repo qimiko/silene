@@ -10,12 +10,15 @@
 #include <netdb.h>
 
 std::int32_t emu_getsockopt(Environment& env, std::int32_t socket, std::int32_t level, std::int32_t option_name, std::uint32_t option_value_ptr, std::uint32_t option_len_ptr) {
-	spdlog::info("TODO: getsockopt({}, {}, {})", socket, level, option_name);
+	bool unhandled = false;
 
 	// thanks macos
 	switch (level) {
 		case 1:
 			level = SOL_SOCKET;
+			break;
+		default:
+			unhandled = true;
 			break;
 	}
 
@@ -23,12 +26,24 @@ std::int32_t emu_getsockopt(Environment& env, std::int32_t socket, std::int32_t 
 		case 4:
 			option_name = SO_ERROR;
 			break;
+		default:
+			unhandled = true;
+			break;
+	}
+
+	if (unhandled) {
+		spdlog::info("TODO: getsockopt({}, {}, {})", socket, level, option_name);
 	}
 
 	auto option_value = env.memory_manager().read_bytes<void>(option_value_ptr);
 	auto option_len = env.memory_manager().read_bytes<std::uint32_t>(option_len_ptr);
 
-	return getsockopt(socket, level, option_name, option_value, option_len);
+	if (getsockopt(socket, level, option_name, option_value, option_len) != 0) {
+		spdlog::info("getsockopt failed: {}", errno);
+		return -1;
+	}
+
+	return 0;
 }
 
 std::int32_t domain_to_system(std::int32_t domain) {
@@ -253,7 +268,7 @@ std::int32_t emu_recv(Environment& env, std::int32_t sockfd, std::uint32_t buf_p
 	auto buf = env.memory_manager().read_bytes<void>(buf_ptr);
 	auto r = recv(sockfd, buf, size, flags);
 
-	// spdlog::info("recv: {}", std::string_view{reinterpret_cast<char*>(buf), 512});
+	// spdlog::info("recv: {}", std::string_view{reinterpret_cast<char*>(buf), std::min(size, 512u)});
 
 	return r;
 }

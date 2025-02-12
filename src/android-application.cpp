@@ -63,6 +63,8 @@ std::uint32_t AndroidApplication::create_thread(std::uint32_t start_addr, std::u
 	std::scoped_lock lk{_envs_mutex};
 
 	auto id = _last_tid++;
+
+	spdlog::info("creating thread with id {}", id);
 	_envs.try_emplace(id, *this, _state, &_monitor, id);
 
 	// keep the thread alive so join/detach can be called on it

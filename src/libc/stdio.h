@@ -15,6 +15,8 @@ std::int32_t emu_fclose(Environment& env, std::uint32_t file);
 std::int32_t emu_fputs(Environment& env, std::uint32_t str_ptr, std::uint32_t stream_ptr);
 std::int32_t emu_fseek(Environment& env, std::uint32_t file_ref, std::int32_t offset, std::int32_t origin);
 std::int32_t emu_fread(Environment& env, std::uint32_t buf_ptr, std::uint32_t size, std::uint32_t count, std::uint32_t file_ref);
+std::int32_t emu_fgets(Environment& env, std::uint32_t str_ptr, std::int32_t count, std::uint32_t file_ref);
+
 std::int32_t emu_ftell(Environment& env, std::uint32_t file_ref);
 std::int32_t emu_sprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t format_ptr, Variadic v);
 std::int32_t emu_snprintf(Environment& env, std::uint32_t output_ptr, std::uint32_t output_size, std::uint32_t format_ptr, Variadic v);
